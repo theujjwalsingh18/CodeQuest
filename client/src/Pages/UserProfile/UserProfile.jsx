@@ -1,60 +1,93 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import moment from 'moment';
+import { useSelector } from 'react-redux';
+import Avatar from '../../Components/Avatar/Avatar';
 import Leftsidebar from '../../Components/Leftsidebar/Leftsidebar'
-import { useParams } from 'react-router-dom'
-import moment from 'moment'
-import { useSelector } from 'react-redux'
-import Avatar from '../../Components/Avatar/Avatar'
-import Editprofileform from './EditProfile'
-import ProfileBio from './ProfileBio'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faBirthdayCake, faPen } from '@fortawesome/free-solid-svg-icons'
+import EditProfileForm from './EditProfile';
+import LocationSection from './LocationSection';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPen } from '@fortawesome/free-solid-svg-icons';
+import './UserProfile.css';
+
 const UserProfile = ({ slidein }) => {
-  const { id } = useParams()
+  const { id } = useParams();
   const [Switch, setswitch] = useState(false);
 
-  const users = useSelector((state) => state.usersreducer)
-  const currentprofile = users.filter((user) => user._id === id)[0]
-  const currentuser = useSelector((state) => state.currentuserreducer)
+  const users = useSelector((state) => state.usersreducer);
+  const currentprofile = users.filter((user) => user._id === id)[0];
+  const currentuser = useSelector((state) => state.currentuserreducer);
+  
+  const isCurrentUser = currentuser?.result?._id === id;
 
   if (!currentprofile) {
-    return <div>User not found</div>
+    return <div>User not found</div>;
   }
 
   return (
     <div className="home-container-1">
       <Leftsidebar slidein={slidein} />
       <div className="home-container-2">
-        <section>
-          <div className="user-details-container">
-            <div className="user-details">
-              <Avatar backgroundColor="purple" color="white" fontSize="50px" px="40px" py="30px">
-                {currentprofile.name && currentprofile.name.charAt(0).toUpperCase()}
+        <div className="profile-container">
+          <div className="profile-header">
+            <div className="avatar">
+              <Avatar 
+                backgroundColor="purple" 
+                color="white" 
+                fontSize="50px"
+                px="40px" 
+                py="30px"
+                borderRadius="50%"
+                marginTop= "30px"
+              >
+                {currentprofile.name.charAt(0).toUpperCase()}
               </Avatar>
-              <div className="user-name">
-                <h1>{currentprofile?.name}</h1>
-                <p>
-                  <FontAwesomeIcon icon={faBirthdayCake} /> Joined{" "} {moment(currentprofile?.joinedon).fromNow()}
-                </p>
+            </div>
+            
+            <div className="profile-info">
+              <h1>{currentprofile.name}</h1>
+              <div className="joined-date">
+                <i className="fas fa-calendar-alt"></i>
+                <span>Joined{" "} {moment(currentprofile?.joinedon).fromNow()}</span>
+              </div>
+              
+              <div className="tags">
+                {currentprofile.tags?.map((tag, index) => (
+                  <div key={index} className="tag">{tag}</div>
+                ))}
+              </div>
+              
+              <div className="bio">
+                {currentprofile.about || "No bio available"}
               </div>
             </div>
-            {currentuser?.result && currentuser.result._id === id && (
-              <button className="edit-profile-btn" type='button' onClick={() => setswitch(true)}>
+            
+            {isCurrentUser && (
+              <button 
+                className="edit-profile-btn" 
+                type='button'
+                onClick={() => setswitch(true)}
+              >
                 <FontAwesomeIcon icon={faPen} /> Edit Profile
               </button>
             )}
           </div>
           <>
-            {Switch ? (
-              <Editprofileform currentuser={currentuser} setswitch={setswitch} />
-            ) : (
-              <ProfileBio currentprofile={currentprofile} />
-            )}
+          {Switch ? (
+            <EditProfileForm 
+              currentuser={currentuser} 
+              setswitch={setswitch} 
+            />
+          ) : (
+            <div className="profile-content">
+              <LocationSection isCurrentUser={isCurrentUser} />
+            </div>
+          )}
           </>
-        </section>
+        </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-
-export default UserProfile
+export default UserProfile;

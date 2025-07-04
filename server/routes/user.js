@@ -2,11 +2,12 @@ import express from "express"
 import  {login,signup} from '../controller/auth.js'
 import { getallUsers,updateprofile } from "../controller/userCtrl.js";
 import auth from "../middleware/auth.js"
+import User from "../models/auth.js";
 
 const userroutes=express.Router();
 
 userroutes.post("/signup",signup);
-userroutes.post("/login",login);
+userroutes.post("/login", login);
 
 userroutes.get("/getallusers",getallUsers)
 

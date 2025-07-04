@@ -21,4 +21,4 @@ const Aboutauth = () => {
   )
 }
 
-export default Aboutauth
+export default Aboutauth;

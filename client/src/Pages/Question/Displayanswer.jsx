@@ -15,7 +15,16 @@ const Displayanswer = ({ question, handleshare }) => {
     <div>
       {question.answer.map((ans) => (
         <div className="display-ans" key={ans._id}>
-          <p>{ans.answerbody}</p>
+          <p>{ans.answerbody}
+            {ans.videoUrl && (
+              <div className="answer-video">
+                <video controls width="100%" style={{ maxWidth: "400px" }}>
+                  <source src={ans.videoUrl} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            )}
+          </p>
           <div className="question-actions-user">
             <div>
               <button type='button' onClick={handleshare} >Share</button>
@@ -25,12 +34,12 @@ const Displayanswer = ({ question, handleshare }) => {
             </div>
             <div>
               <p>answered {moment(ans.answeredon).fromNow()}</p>
-                <Link to={`../Users/${ans.userid}`} className='user-link' style={{ color: "#0086d8" }}>
-                  <Avatar backgroundColor="lightgreen" px="2px" py="2px" borderRadius="2px">
-                    {ans.useranswered.charAt(0).toUpperCase()}
-                  </Avatar>
-                  <div>{ans.useranswered}</div>
-                </Link>
+              <Link to={`../Users/${ans.userid}`} className='user-link' style={{ color: "#0086d8" }}>
+                <Avatar backgroundColor="lightgreen" px="2px" py="2px" borderRadius="2px">
+                  {ans.useranswered.charAt(0).toUpperCase()}
+                </Avatar>
+                <div>{ans.useranswered}</div>
+              </Link>
             </div>
           </div>
         </div>

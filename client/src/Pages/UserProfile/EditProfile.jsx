@@ -12,7 +12,7 @@ const EditProfile = ({ currentuser, setswitch }) => {
     e.preventDefault()
     if (tags[0] === '' || tags.length === 0) {
       alert("update tags field")
-    }else{ 
+    }else{
       dispatch(updateprofile(currentuser?.result?._id,{name,about,tags}))
     }
     setswitch(false)
@@ -47,4 +47,4 @@ const EditProfile = ({ currentuser, setswitch }) => {
   )
 }
 
-export default EditProfile
+export default EditProfile;

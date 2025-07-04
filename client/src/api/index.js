@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API=axios.create({
-    baseURL:"http://localhost:5000"
+    baseURL: "http://localhost:5000/"
 });
 
 API.interceptors.request.use((req)=>{
@@ -13,13 +13,24 @@ API.interceptors.request.use((req)=>{
     return req;
 })
 
+
 export const login=(authdata)=>API.post("user/login",authdata);
-export const signup=(authdata)=>API.post("user/signup",authdata);
+export const signup = (authdata) => API.post("user/signup", authdata);
+
+export const sendOtp = (payload) => API.post("/auth/send-otp", payload);
+export const verifyOtp = (payload) => API.post("/auth/verify-otp", payload);
+export const updatePassword = (payload) => API.post("/auth/update-password", payload);
+
 export const getallusers=()=> API.get("/user/getallusers");
 export const updateprofile=(id,updatedata)=>API.patch(`user/update/${id}`,updatedata)
 
 
-export const postquestion=(questiondata)=>API.post("/questions/Ask",questiondata);
+// export const postquestion=(questiondata)=>API.post("/questions/Ask",questiondata);
+export const postquestion = (formData) => API.post('/questions/Ask', formData, {
+    headers: {
+        'Content-Type': 'multipart/form-data'
+    }
+});
 export const getallquestions=()=>API.get("/questions/get");
 export const deletequestion=(id)=>API.delete(`/questions/delete/${id}`);
 export const votequestion=(id,value)=>API.patch(`/questions/vote/${id}`,{value});

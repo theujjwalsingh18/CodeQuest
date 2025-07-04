@@ -25,9 +25,14 @@ const Question = ({ question }) => {
                 </Link>
                 <div className="display-tags-time">
                     <div className="display-tags">
-                        {question.questiontags.map((tag)=>(
+                        {question.questiontags.map((tag) => (
                             <p key={tag}> {tag}</p>
                         ))}
+                        {question.videoUrl && (
+                            <span style={{ marginLeft: '10px', color: '#0077cc' }}>
+                                <i className="fa-solid fa-video"></i> Video
+                            </span>
+                        )}
                     </div>
                     <p className="display-time">
                         asked {moment(question.askedon).fromNow()} {question.userposted}
