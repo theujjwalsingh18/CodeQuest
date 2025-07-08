@@ -1,8 +1,7 @@
 import axios from "axios";
 
 const API=axios.create({
-    // baseURL: "http://localhost:5000/"
-    baseURL: "https://stackify-ic2p.onrender.com"
+    baseURL: "http://localhost:5000/"
 });
 
 API.interceptors.request.use((req)=>{
@@ -20,18 +19,15 @@ export const signup = (authdata) => API.post("user/signup", authdata);
 
 export const sendOtp = (payload) => API.post("/auth/send-otp", payload);
 export const verifyOtp = (payload) => API.post("/auth/verify-otp", payload);
+export const verifyLoginOtp = (payload) => API.post("/auth/verify-login-otp", payload);
 export const updatePassword = (payload) => API.post("/auth/update-password", payload);
 
-export const getallusers=()=> API.get("/user/getallusers");
+export const getallusers = () => API.get("/user/getallusers");
+export const getLoginHistory = (userId) => API.get(`/user/history/${userId}`);
 export const updateprofile=(id,updatedata)=>API.patch(`user/update/${id}`,updatedata)
 
 
-// export const postquestion=(questiondata)=>API.post("/questions/Ask",questiondata);
-export const postquestion = (formData) => API.post('/questions/Ask', formData, {
-    headers: {
-        'Content-Type': 'multipart/form-data'
-    }
-});
+export const postquestion = (formData, config) => API.post('/questions/Ask', formData, config);
 export const getallquestions=()=>API.get("/questions/get");
 export const deletequestion=(id)=>API.delete(`/questions/delete/${id}`);
 export const votequestion=(id,value)=>API.patch(`/questions/vote/${id}`,{value});

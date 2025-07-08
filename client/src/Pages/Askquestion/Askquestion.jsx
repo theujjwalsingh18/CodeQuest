@@ -48,7 +48,7 @@ const Askquestion = () => {
     const currentTime = hours + minutes / 60;
 
     // 14:00 (2 PM) to 19:00 (7 PM)
-    const isAllowed = currentTime >= 14 && currentTime < 19;
+    const isAllowed = currentTime >= 1 && currentTime < 24;
     setIsVideoAllowed(isAllowed);
 
     if (!isAllowed && video) {

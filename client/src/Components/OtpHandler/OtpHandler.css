@@ -151,11 +151,11 @@
 }
 
 .verify-btn {
-  padding: 16px 24px;
+  padding: 10px 15px;
   background: linear-gradient(to right, #0A0F3C, #2C5DA9);
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: 30px;
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
@@ -184,7 +184,7 @@
   font-size: 16px;
   font-weight: 600;
   padding: 8px 0;
-  background: linear-gradient(90deg, #3F1D38 0%, #AF5279 50%, #FFD6A5 100%);
+  background: linear-gradient(90deg, #1D4AB5 0%, #2573F1 50%, #050505 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -193,9 +193,17 @@
 }
 
 @keyframes gradientText {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .resend-container {
@@ -252,8 +260,13 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 1024px) {

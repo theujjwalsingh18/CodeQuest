@@ -13,7 +13,17 @@ const userSchema = mongoose.Schema({
   resetAttempted: { type: Boolean, default: false },
   videoOtp: String,
   videoOtpExpiry: Date,
-  lastVideoOtpSent: Date
+  lastVideoOtpSent: Date,
+  loginHistory: [{
+    timestamp: { type: Date, default: Date.now },
+    browser: String,
+    os: String,
+    deviceType: String,
+    ip: String,
+    location: String
+  }],
+  loginOtp: String,
+  loginOtpExpiry: Date
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {

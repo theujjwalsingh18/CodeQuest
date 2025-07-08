@@ -7,6 +7,7 @@ const auth=(req,res,next)=>{
         req.userid=decodedata?.id;
         next();
     } catch (error) {
+        res.status(401).json({ message: "Unauthorized" });
         console.log(error)
     }
 }

@@ -7,14 +7,17 @@ import userroutes from "./routes/user.js"
 import authRoutes from "./routes/auth.js"
 import questionroutes from "./routes/question.js"
 import answerroutes from "./routes/answer.js"
+
 const app = express();
+app.set('trust proxy', true);
 dotenv.config();
-app.use(express.json({ limit: "50mb", extended: true }))
-app.use(express.urlencoded({ limit: "50mb", extended: true }))
+
+app.use(express.json({ limit: '30mb', extended: true }));
+app.use(express.urlencoded({ limit: '30mb', extended: true }));
 app.use(cors());
 app.use(fileUpload({
-  useTempFiles: true,
-  tempFileDir: '/tmp/'
+  useTempFiles: false,
+  limits: { fileSize: 50 * 1024 * 1024 }
 }));
 
 app.use("/user", userroutes);

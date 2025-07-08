@@ -16,7 +16,8 @@ const OtpHandler = ({
   buttonText = "Verify",
   onDailyLimitExceeded,
   initialError = null,
-  autoSend = false
+  autoSend = false,
+  onResend,
 }) => {
   const [otp, setOtp] = useState('');
   const [message, setMessage] = useState('');
@@ -49,6 +50,17 @@ const OtpHandler = ({
     try {
       const action = isResend ? setResendLoading : setLoading;
       action(true);
+      if (purpose === 'browserVerification' && isResend && onResend) {
+        const result = await onResend();
+        if (result?.otpRequired) {
+          setMessage('New OTP sent! Please check your email.');
+          if (otpInputRef.current) {
+            otpInputRef.current.focus();
+          }
+          return true;
+        }
+        return false;
+      }
       
       const result = await dispatch(sendOtp({ email, purpose }));
       
@@ -57,6 +69,7 @@ const OtpHandler = ({
         if (otpInputRef.current) {
           otpInputRef.current.focus();
         }
+        return true;
       } else {
         const errorMsg = result?.message || 'Failed to send OTP';
         if (result?.status === 429 || 
@@ -69,16 +82,17 @@ const OtpHandler = ({
         } else {
           setMessage(errorMsg);
         }
+        return false;
       }
     } catch (error) {
       setMessage('Failed to send OTP');
+      return false;
     } finally {
       setResendLoading(false);
       setLoading(false);
     }
-  }, [dispatch, email, purpose, onDailyLimitExceeded]);
+  }, [dispatch, email, purpose, onDailyLimitExceeded, onResend]);
 
- 
   useEffect(() => {
     if (autoSend && !initialSendDone.current && !dailyLimitExceeded) {
       initialSendDone.current = true;
@@ -138,12 +152,18 @@ const OtpHandler = ({
 
     setLoading(true);
     try {
-      const result = await dispatch(verifyOtp({ email, otp, purpose }));
-      
-      if (result?.success) {
-        onVerify();
-      } else {
-        setMessage(result?.message || 'Invalid OTP');
+      let result;
+      if (purpose === 'browserVerification') {
+        const success = await onVerify(otp);
+        if (success) return;
+        setMessage('OTP verification failed');
+      }else {
+        result = await dispatch(verifyOtp({ email, otp, purpose }));
+        if (result?.success) {
+          onVerify();
+        } else {
+          setMessage(result?.message || 'Invalid OTP');
+        }
       }
     } catch (error) {
       setMessage('OTP verification failed');
@@ -257,7 +277,7 @@ const OtpHandler = ({
                   </button>
                 </div>
 
-                {message && <p className="otp-message">{message}</p>}
+                {message && <p className={`otp-message ${message.includes('success') ? 'success' : 'error'}`}>{message}</p>}
 
                 <div className="resend-container">
                   <button

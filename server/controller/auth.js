@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import crypto from 'crypto';
 import sgMail from '@sendgrid/mail';
 import dotenv from 'dotenv';
+import { getDeviceInfo } from '../middleware/deviceInfo.js';
 dotenv.config();
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -53,25 +54,126 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    const device = getDeviceInfo(req);
+  
+    // if (device.deviceType === 'mobile') {
+    //   const now = new Date();
+    //   const hours = now.getUTCHours();
+    //   if (hours < 10 || hours >= 13) {
+    //     return res.status(403).json({ 
+    //       message: 'Mobile access allowed only between 10:00 AM - 1:00 PM UTC' 
+    //     });
+    //   }
+    // }
+
     const existinguser = await User.findOne({ email });
     if (!existinguser) {
-      return res.status(404).json({ message: "User doesn't exists" });
+      return res.status(404).json({ message: "User doesn't exist" });
     }
-    const ispasswordcrct = await bcrypt.compare(password, existinguser.password);
 
+    const ispasswordcrct = await bcrypt.compare(password, existinguser.password);
     if (!ispasswordcrct) {
-      console.log("Password Incorrect");
-      
       return res.status(400).json({ message: "Invalid password" });
     }
-    const token = jwt.sign({
-      email: existinguser.email, id: existinguser._id
-    }, process.env.JWT_SECRET, { expiresIn: "1h" }
-    )
 
-    res.status(200).json({ result: existinguser, token });
+    if (device.browser === 'Chrome') {
+      const otp = crypto.randomInt(100000, 999999).toString();
+      const otpExpiry = new Date(Date.now() + 5 * 60000);
+      
+      existinguser.loginOtp = otp;
+      existinguser.loginOtpExpiry = otpExpiry;
+      await existinguser.save();
+
+      // Send OTP email
+      const emailTemplate = {
+        subject: `Your Login Verification OTP`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #f78409; border-radius: 8px;">
+            <h2 style="color: #f78409; text-align: center;">Login Verification</h2>
+            <p>We detected a login attempt from Chrome browser for your account: <strong>${email}</strong>.</p>
+            <p>For security, please enter this OTP:</p>
+            
+            <div style="background: #f8f9fa; padding: 20px; text-align: center; margin: 25px 0; border-radius: 8px; border: 2px dashed #f78409;">
+              <h1 style="margin: 0; letter-spacing: 3px; color: #2c3e50;">${otp}</h1>
+            </div>
+            
+            <p style="font-size: 14px; color: #7f8c8d;">
+              <strong>This verification code is valid for 5 minutes.</strong><br>
+              If you didn't request this, please ignore this email or contact support.
+            </p>
+            
+            <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #95a5a6; font-size: 13px;">
+              <p>Best regards,<br>The Stackify Team</p>
+              <p style="margin-top: 10px;">Need help? Contact us at ${SUPPORT_EMAIL}</p>
+            </div>
+          </div>
+        `
+      };
+
+      const msg = {
+        to: email,
+        from: SENDER_EMAIL,
+        subject: emailTemplate.subject,
+        html: emailTemplate.html
+      };
+
+      await sgMail.send(msg);
+      
+      return res.status(200).json({ 
+        otpRequired: true,
+        message: "OTP sent for Chrome verification" 
+      });
+    }else {
+      const token = jwt.sign(
+        { email: existinguser.email, id: existinguser._id },
+        process.env.JWT_SECRET,
+        { expiresIn: "1h" }
+      );
+      
+      existinguser.loginHistory.push(device);
+      await existinguser.save();
+      
+      res.status(200).json({ result: existinguser, token });
+    }
   } catch (error) {
-    res.status(500).json("something went wrong...");
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Something went wrong..." });
+  }
+}
+
+export const verifyLoginOtp = async (req, res) => {
+  const { email, otp } = req.body;
+
+  try {
+    const device = getDeviceInfo(req);
+    const user = await User.findOne({ 
+      email, 
+      loginOtp: otp,
+      loginOtpExpiry: { $gt: Date.now() } 
+    });
+
+    if (!user) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid OTP or expired. Please request a new OTP." 
+      });
+    }
+
+    user.loginOtp = undefined;
+    user.loginOtpExpiry = undefined;
+    user.loginHistory.push(device);
+    await user.save();
+
+    const token = jwt.sign(
+      { email: user.email, id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    res.status(200).json({ result: user, token });
+  } catch (error) {
+    console.error("OTP Verification Error:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 }
 

@@ -1,10 +1,9 @@
 import Question from "../models/Question.js";
 import mongoose from "mongoose";
 import cloudinary from '../config/cloudinary.js';
-import fs from 'fs';
 import ffmpeg from 'fluent-ffmpeg';
 import ffprobeStatic from 'ffprobe-static';
-
+import stream from 'stream';
 
 ffmpeg.setFfprobePath(ffprobeStatic.path);
 
@@ -47,133 +46,87 @@ const deleteWithRetry = async (publicId, attempts = 0) => {
         console.error("Permanent deletion failure. Manual cleanup needed for:", publicId);
     }
 };
-
 export const Askquestion = async (req, res) => {
-    try {
-        const { questiontitle, questionbody, questiontags } = req.body;
-        const userid = req.userid;
-        const videoFile = req.files?.video;
+  try {
+    const { questiontitle, questionbody, questiontags, userposted } = req.body;
+    const userid = req.userid;
+    const videoFile = req.files?.video;
 
-        console.log("Received question data:", {
-            questiontitle,
-            questionbody,
-            questiontags,
-            userid
-        });
-
-        const now = new Date();
-        const hours = now.getHours();
-        console.log(`Current time: ${now}, hours: ${hours}`);
-        
-        if (videoFile && (hours < 14 || hours >= 19)) {
-            return res.status(403).json({ 
-                message: "Video uploads only allowed between 2 PM and 7 PM" 
-            });
-        }
-
-        let videoUrl = '';
-        let publicId = '';
-
-        if (videoFile) {
-            console.log("Video file received:", {
-                name: videoFile.name,
-                size: videoFile.size,
-                mimetype: videoFile.mimetype,
-                tempFilePath: videoFile.tempFilePath
-            });
-
-            if (videoFile.size > 50 * 1024 * 1024) {
-                return res.status(400).json({
-                    message: "Video exceeds 50 MB limit"
-                });
-            }
-
-            try {
-                const duration = await getVideoDuration(videoFile.tempFilePath);
-                console.log(`Video duration: ${duration} seconds`);
-                
-                if (duration > 120) {
-                    console.log("Video exceeds 2 minute limit - aborting upload");
-                    fs.unlinkSync(videoFile.tempFilePath);
-                    return res.status(400).json({
-                        message: "Video exceeds 2 minute limit"
-                    });
-                }
-            } catch (durationError) {
-                console.error("Duration check error:", durationError);
-                fs.unlinkSync(videoFile.tempFilePath);
-                return res.status(500).json({
-                    message: "Failed to process video duration"
-                });
-            }
-
-            // Upload to Cloudinary
-            try {
-                console.log("Uploading video to Cloudinary...");
-                
-                const result = await cloudinary.uploader.upload(videoFile.tempFilePath, {
-                    resource_type: "video",
-                    chunk_size: 50 * 1024 * 1024,
-                    eager: [{ streaming_profile: "hd", format: "m3u8" }],
-                    eager_async: true
-                });
-
-                console.log("Cloudinary upload result:", {
-                    public_id: result.public_id,
-                    duration: result.duration,
-                    url: result.secure_url
-                });
-
-                // Secondary duration check (Cloudinary's metadata)
-                if (result.duration > 120) {
-                    console.log(`Cloudinary reports duration (${result.duration}s) exceeds limit`);
-                    
-                    // Attempt to delete with retries
-                    await deleteWithRetry(result.public_id);
-                    return res.status(400).json({
-                        message: "Video exceeds 2 minute limit"
-                    });
-                }
-
-                videoUrl = result.secure_url;
-                publicId = result.public_id;
-                
-            } catch (uploadError) {
-                console.error("Video upload error:", uploadError);
-                return res.status(500).json({
-                    message: "Video processing failed: " + uploadError.message
-                });
-            } finally {
-                if (fs.existsSync(videoFile.tempFilePath)) {
-                    fs.unlinkSync(videoFile.tempFilePath);
-                    console.log("Temporary file deleted");
-                }
-            }
-        }
-        
-        const postquestion = new Question({
-            questiontitle,
-            questionbody,
-            questiontags: JSON.parse(questiontags),
-            videoUrl,
-            publicId,
-            userposted: req.body.userposted,
-            userid
-        });
-
-        console.log("Saving question to database");
-        const savedQuestion = await postquestion.save();
-        console.log("Question saved successfully:", savedQuestion._id);
-        
-        res.status(200).json(savedQuestion);
-    } catch (error) {
-        console.error("Error in Askquestion controller:", error);
-        res.status(500).json({ 
-            message: "Couldn't post a new question",
-            error: error.message
-        });
+    const now = new Date();
+    const hours = now.getHours();
+    if (videoFile && (hours < 1 || hours >= 22)) {
+      return res.status(403).json({ 
+        message: "Video uploads only allowed between 2 PM and 7 PM" 
+      });
     }
+
+    let videoUrl = '';
+    let publicId = '';
+
+    if (videoFile) {
+      if (videoFile.size > 50 * 1024 * 1024) {
+        return res.status(400).json({
+          message: "Video exceeds 50 MB limit"
+        });
+      }
+
+      try {
+        const bufferStream = new stream.PassThrough();
+        bufferStream.end(videoFile.data);
+        
+        const uploadResult = await new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              resource_type: "video",
+              chunk_size: 6 * 1024 * 1024,
+              eager: [{ streaming_profile: "hd", format: "m3u8" }],
+              eager_async: true
+            },
+            (error, result) => error ? reject(error) : resolve(result)
+          );
+          
+          bufferStream.pipe(uploadStream);
+        });
+
+        if (uploadResult.duration > 120) {
+          await deleteWithRetry(uploadResult.public_id);
+          return res.status(400).json({
+            message: "Video exceeds 2 minute limit"
+          });
+        }
+
+        videoUrl = uploadResult.secure_url;
+        publicId = uploadResult.public_id;
+      } catch (uploadError) {
+        console.error("Video upload error:", uploadError);
+        return res.status(500).json({
+          message: "Video processing failed: " + uploadError.message
+        });
+      }
+    }
+    
+    const postquestion = new Question({
+      questiontitle,
+      questionbody,
+      questiontags: JSON.parse(questiontags),
+      videoUrl,
+      publicId,
+      userposted,
+      userid
+    });
+
+    const savedQuestion = await postquestion.save();
+    res.status(200).json(savedQuestion);
+  } catch (error) {
+    console.error("Error in Askquestion controller:", error);
+    res.status(500).json({ 
+      message: "Couldn't post a new question",
+      error: error.message
+    });
+  }
 };
+
+
 export const getallquestion = async (req, res) => {
     try {
         const questionlist = await Question.find().sort({ askedon: -1 });

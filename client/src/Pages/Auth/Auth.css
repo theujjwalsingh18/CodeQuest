@@ -661,3 +661,65 @@
   font-size: 16px;
   color: #333;
 }
+
+/* OTP Form Styling */
+.otp-form {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.otp-instruction {
+  text-align: center;
+  margin-bottom: 25px;
+  color: #555;
+}
+
+.otp-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.otp-back-btn {
+  flex: 1;
+  padding: 12px;
+  background: #f1f2f3;
+  color: #555;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.otp-back-btn:hover {
+  background: #e4e6e8;
+}
+
+.otp-resend {
+  text-align: center;
+  margin-top: 25px;
+  color: #555;
+}
+
+.otp-resend button {
+  background: none;
+  border: none;
+  color: #0095ff;
+  cursor: pointer;
+  margin-left: 5px;
+  padding: 0;
+  font-size: inherit;
+}
+
+.otp-resend button:hover {
+  text-decoration: underline;
+}
+
+
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
