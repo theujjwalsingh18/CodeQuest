@@ -1,29 +1,7 @@
 import Question from "../models/Question.js";
 import mongoose from "mongoose";
 import cloudinary from '../config/cloudinary.js';
-import ffmpeg from 'fluent-ffmpeg';
-import ffprobeStatic from 'ffprobe-static';
 import stream from 'stream';
-
-ffmpeg.setFfprobePath(ffprobeStatic.path);
-
-const getVideoDuration = (filePath) => {
-    return new Promise((resolve, reject) => {
-        ffmpeg.ffprobe(filePath, (err, metadata) => {
-            if (err) {
-                console.error("FFprobe error:", err);
-                return reject(err);
-            }
-            
-            const duration = metadata.format.duration;
-            if (typeof duration !== 'number') {
-                return reject(new Error("Invalid duration format"));
-            }
-            
-            resolve(duration);
-        });
-    });
-};
 
 const deleteWithRetry = async (publicId, attempts = 0) => {
     const maxAttempts = 5;
@@ -54,7 +32,7 @@ export const Askquestion = async (req, res) => {
 
     const now = new Date();
     const hours = now.getHours();
-    if (videoFile && (hours < 1 || hours >= 22)) {
+    if (videoFile && (hours < 14 || hours >= 22)) {
       return res.status(403).json({ 
         message: "Video uploads only allowed between 2 PM and 7 PM" 
       });

@@ -2,6 +2,7 @@ import axios from "axios";
 
 const API=axios.create({
     baseURL: "http://localhost:5000/"
+    // baseURL: "https://stackify-ic2p.onrender.com/"
 });
 
 API.interceptors.request.use((req)=>{
@@ -12,6 +13,20 @@ API.interceptors.request.use((req)=>{
     }
     return req;
 })
+
+API.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 403 && 
+        error.response?.data?.error?.includes("Mobile access allowed only")) {
+      localStorage.setItem('mobileRestricted', 'true');
+      if (window.location.pathname !== '/') {
+        window.location.href = '/';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 
 export const login=(authdata)=>API.post("user/login",authdata);

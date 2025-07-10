@@ -31,6 +31,7 @@ const Askquestion = () => {
   const [isVideoVerified, setIsVideoVerified] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [emailVerificationRequired, setEmailVerificationRequired] = useState(false);
+  const [checkingVideo, setCheckingVideo] = useState(false);
 
   const progressRef = useRef({
     interval: null,
@@ -48,7 +49,7 @@ const Askquestion = () => {
     const currentTime = hours + minutes / 60;
 
     // 14:00 (2 PM) to 19:00 (7 PM)
-    const isAllowed = currentTime >= 1 && currentTime < 24;
+    const isAllowed = currentTime >= 1 && currentTime < 19;
     setIsVideoAllowed(isAllowed);
 
     if (!isAllowed && video) {
@@ -102,9 +103,9 @@ const Askquestion = () => {
         return;
       }
 
-      const allowedTypes = ["video/mp4", "video/webm", "video/ogg", "video/x-matroska"];
+      const allowedTypes = ["video/mp4", "video/webm", "video/ogg",];
       if (!allowedTypes.includes(video.type)) {
-        showError("Only MP4, WebM, MKV and OGG videos are allowed");
+        showError("Only MP4, WebM, and OGG videos are allowed");
         return;
       }
     }
@@ -262,17 +263,57 @@ const Askquestion = () => {
 
   const handleVideoChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      if (isVideoVerified) {
-        setVideo(file);
-        showInfo("Video selected. Ready for upload!");
-      } else {
-        setEmailVerificationRequired(true);
-        showInfo("Email verification required for video upload");
-      }
-    } else {
+    if (!file) {
       setVideo(null);
+      return;
     }
+
+    if (!isVideoVerified) {
+      setEmailVerificationRequired(true);
+      showInfo("Email verification required for video upload");
+      e.target.value = "";
+      return;
+    }
+
+    const allowedTypes = ["video/mp4", "video/webm", "video/ogg",];
+    if (!allowedTypes.includes(file.type)) {
+      showError("Only MP4, WebM, and OGG videos are allowed");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+      showError("Video file exceeds 50MB limit");
+      e.target.value = "";
+      return;
+    }
+
+    setCheckingVideo(true);
+    const videoElement = document.createElement('video');
+    videoElement.preload = 'metadata';
+
+    videoElement.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(videoElement.src);
+      const duration = videoElement.duration;
+      if (duration > 120) { 
+        setCheckingVideo(false);
+        showError("Video exceeds 2 minute limit");
+        e.target.value = "";
+      } else {
+        setVideo(file);
+        setCheckingVideo(false);
+        showInfo("Video selected. Ready for upload!");
+      }
+    };
+
+    videoElement.onerror = () => {
+      window.URL.revokeObjectURL(videoElement.src);
+      setCheckingVideo(false);
+      showError("Invalid video file. Could not load metadata.");
+      e.target.value = "";
+    };
+
+    videoElement.src = URL.createObjectURL(file);
   };
 
   const handleenter = (e) => {
@@ -362,7 +403,10 @@ const Askquestion = () => {
 
               {isVideoAllowed ? (
                 <>
-                  <p>Max size: 50MB. Allowed between 2PM-7PM only.</p>
+                  <p>Max size: <strong>50MB</strong>.
+                    <br />Max duration: <strong>2 minutes</strong>.
+                    <br />
+                    Allowed between 2PM-7PM only.</p>
 
                   <div className="verification-status">
                     <span>Verification: </span>
@@ -395,14 +439,22 @@ const Askquestion = () => {
                     !video ? (
                       <div className="video-upload-area">
                         <label className="video-upload-label">
-                          <MdCloudUpload className="upload-icon" />
-                          <span>Click to select video</span>
+                          {checkingVideo ? (
+                            <div className="video-checking">
+                              <span className="spinner"></span> Checking video...
+                            </div>
+                          ) : (
+                            <>
+                              <MdCloudUpload className="upload-icon" />
+                              <span>Click to select video</span>
+                            </>
+                          )}
                           <input
                             type="file"
-                            accept="video/*"
+                            accept=".mp4,.webm,.ogg,video/mp4,video/webm,video/ogg"
                             onChange={handleVideoChange}
                             className="video-upload-input"
-                            disabled={isUploading}
+                            disabled={isUploading || checkingVideo}
                           />
                         </label>
                       </div>
@@ -463,20 +515,6 @@ const Askquestion = () => {
                       {uploadProgress}%
                     </div>
                   </div>
-                  <div className="progress-stages">
-                    <span className={uploadProgress > 10 ? 'active' : ''}>
-                      {uploadProgress > 10 ? "✓ " : ""}Preparing
-                    </span>
-                    <span className={uploadProgress > 40 ? 'active' : ''}>
-                      {uploadProgress > 40 ? "✓ " : ""}Uploading
-                    </span>
-                    <span className={uploadProgress > 70 ? 'active' : ''}>
-                      {uploadProgress > 70 ? "✓ " : ""}Processing
-                    </span>
-                    <span className={uploadProgress > 90 ? 'active' : ''}>
-                      {uploadProgress > 90 ? "✓ " : ""}Saving
-                    </span>
-                  </div>
                 </div>
               )}
             </div>
@@ -486,7 +524,7 @@ const Askquestion = () => {
             <button
               type="submit"
               className='submit-btn'
-              disabled={isUploading}
+              disabled={isUploading || checkingVideo}
             >
               {isUploading ? (
                 <span className="uploading-text">

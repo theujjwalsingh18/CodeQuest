@@ -19,31 +19,45 @@ export const getDeviceInfo = (req) => {
     ip = ip.split(',')[0].trim();
   }
 
-  const getLocationFromIP = (ip) => {
-    if (!ip || ip === '127.0.0.1') return 'Unknown';
+  const getLocationInfo = (ip) => {
+    if (!ip || ip === '127.0.0.1') {
+      return {
+        location: 'Unknown',
+        timezone: null
+      };
+    }
 
     try {
       const geo = geoip.lookup(ip);
-      if (!geo) return 'Unknown location';
+      if (!geo) return {
+        location: 'Unknown location',
+        timezone: null
+      };
 
-      return `${geo.city || 'Unknown city'}, ${geo.country || 'Unknown country'}`;
+      return {
+        location: `${geo.city || 'Unknown city'}, ${geo.country || 'Unknown country'}`,
+        timezone: geo.timezone || null
+      };
     } catch (error) {
       console.error('GeoIP lookup failed:', error);
-      return 'Unknown location';
+      return {
+        location: 'Unknown location',
+        timezone: null
+      };
     }
   };
 
-  const location = getLocationFromIP(ip);
-
-  const deviceType = device.type ||
-    (parser.getDevice().type ||
-      (/mobile/i.test(req.headers['user-agent']) ? 'mobile' : 'desktop'));
+  const { location, timezone } = getLocationInfo(ip);
+  const deviceType = device.type || 
+    (parser.getDevice().type || 
+     (/mobile/i.test(req.headers['user-agent']) ? 'mobile' : 'desktop'));
 
   return {
     browser: browser.name || 'Unknown browser',
     os: os.name || 'Unknown OS',
     deviceType,
     ip: ip || 'N/A',
-    location
+    location,
+    timezone
   };
 };

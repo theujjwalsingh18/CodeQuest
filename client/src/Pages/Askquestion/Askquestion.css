@@ -261,3 +261,37 @@
     transform: rotate(360deg);
   }
 }
+.video-checking {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  color: #3b4045;
+  font-size: 14px;
+}
+
+.video-checking .spinner {
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top: 3px solid #009dff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.uploading-text .spinner {
+  display: inline-block;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #fff;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
