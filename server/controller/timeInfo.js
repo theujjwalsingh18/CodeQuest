@@ -38,6 +38,10 @@ export const getDeviceTime = async (req, res) => {
     const timeInfo = getServerTimeInfo(device.timezone);
 
     res.json({
+        browser: device.browser,
+        os: device.os,
+        deviceType: device.deviceType,
+        ip: device.ip,
         timezone: device.timezone || 'UTC',
         location: device.location,
         currentTime: timeInfo.currentTime,
