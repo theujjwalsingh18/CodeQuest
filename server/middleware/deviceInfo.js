@@ -20,11 +20,19 @@ export const getDeviceInfo = (req) => {
   }
 
   const getLocationInfo = (ip) => {
-    if (!ip || ip === '127.0.0.1') {
-      return {
-        location: 'Unknown',
-        timezone: null
-      };
+    if (!ip || ip === '127.0.0.1' || ip === '::1') {
+      try {
+        const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        return {
+          location: 'Local Development',
+          timezone: serverTimezone
+        };
+      } catch {
+        return {
+          location: 'Local Development',
+          timezone: 'UTC'
+        };
+      }
     }
 
     try {
@@ -48,9 +56,9 @@ export const getDeviceInfo = (req) => {
   };
 
   const { location, timezone } = getLocationInfo(ip);
-  const deviceType = device.type || 
-    (parser.getDevice().type || 
-     (/mobile/i.test(req.headers['user-agent']) ? 'mobile' : 'desktop'));
+  const deviceType = device.type ||
+    (parser.getDevice().type ||
+      (/mobile/i.test(req.headers['user-agent']) ? 'mobile' : 'desktop'));
 
   return {
     browser: browser.name || 'Unknown browser',

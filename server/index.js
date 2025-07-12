@@ -7,6 +7,7 @@ import userroutes from "./routes/user.js"
 import authRoutes from "./routes/auth.js"
 import questionroutes from "./routes/question.js"
 import answerroutes from "./routes/answer.js"
+import { getDeviceTime } from "./controller/timeInfo.js";
 import mobileTimeRestriction from "./middleware/mobileTimeRestriction.js";
 
 const app = express();
@@ -25,6 +26,7 @@ app.use("/user", userroutes);
 app.use("/auth", authRoutes)
 app.use('/questions', questionroutes)
 app.use('/answer', answerroutes)
+app.get('/get-time',getDeviceTime)
 app.get('/', (req, res) => {
   res.send("Stakify is running perfect")
 })
