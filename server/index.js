@@ -13,7 +13,6 @@ import mobileTimeRestriction from "./middleware/mobileTimeRestriction.js";
 const app = express();
 app.set('trust proxy', true);
 dotenv.config();
-app.use(mobileTimeRestriction);
 app.use(express.json({ limit: '30mb', extended: true }));
 app.use(express.urlencoded({ limit: '30mb', extended: true }));
 app.use(cors());
@@ -22,10 +21,10 @@ app.use(fileUpload({
   limits: { fileSize: 50 * 1024 * 1024 }
 }));
 
-app.use("/user", userroutes);
-app.use("/auth", authRoutes)
-app.use('/questions', questionroutes)
-app.use('/answer', answerroutes)
+app.use("/user", mobileTimeRestriction, userroutes);
+app.use("/auth", mobileTimeRestriction, authRoutes)
+app.use('/questions',mobileTimeRestriction, questionroutes)
+app.use('/answer', mobileTimeRestriction, answerroutes)
 app.get('/get-time',getDeviceTime)
 app.get('/', (req, res) => {
   res.send("Stakify is running perfect")
