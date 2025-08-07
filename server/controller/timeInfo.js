@@ -1,51 +1,51 @@
+// import axios from 'axios';
+// import { getDeviceInfo } from "../middleware/deviceInfo.js";
+
+
+// export const getDeviceTime = async (req, res) =>{
+//   const device = getDeviceInfo(req);
+//     res.json({
+//       browser: device.browser,
+//       os: device.os,
+//       deviceType: device.deviceType,
+//       ip: device.ip,
+//       timezone: device.timezone,
+//       location: device.location,
+//       currentTime: device.currentTime,
+//       isRestricted: device.deviceType === 'mobile' &&
+//         (new Date(currentTime).getHours() < 10 || new Date(currentTime).getHours() >= 13)
+//     });
+// }
+
 import { getDeviceInfo } from "../middleware/deviceInfo.js";
+
 export const getDeviceTime = async (req, res) => {
-    const device = getDeviceInfo(req);
-    const getServerTimeInfo = (timezone) => {
-        const now = new Date();
-        let hours, minutes;
+  const device = getDeviceInfo(req);
+  const { currentTime, deviceType } = device;
 
-        if (timezone) {
-            try {
-                const formatter = new Intl.DateTimeFormat('en-US', {
-                    timeZone: timezone,
-                    hour: 'numeric',
-                    minute: 'numeric',
-                    hour12: false
-                });
+  let isRestricted = false;
+  if (deviceType === 'mobile' && device.timezone) {
+      try {
+          const date = new Date();
+          const hour = date.toLocaleString('en-US', { timeZone: device.timezone, hour: '2-digit', hour12: false });
+          const currentHour = parseInt(hour, 10);
+          
+          if (currentHour < 10 || currentHour >= 13) {
+              isRestricted = true;
+          }
+      } catch (error) {
+          console.error("Error calculating restricted time:", error);
+      }
+  }
 
-                const parts = formatter.formatToParts(now);
-                for (const part of parts) {
-                    if (part.type === 'hour') hours = parseInt(part.value, 10);
-                    if (part.type === 'minute') minutes = parseInt(part.value, 10);
-                }
-            } catch (error) {
-                console.error('Error formatting time:', error);
-            }
-        }
-        if (hours === undefined || minutes === undefined) {
-            hours = now.getHours();
-            minutes = now.getMinutes();
-        }
-
-        return {
-            hours,
-            minutes,
-            currentTime: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
-        };
-    };
-
-    const timeInfo = getServerTimeInfo(device.timezone);
-
-    res.json({
-        browser: device.browser,
-        os: device.os,
-        deviceType: device.deviceType,
-        ip: device.ip,
-        timezone: device.timezone || 'UTC',
-        location: device.location,
-        currentTime: timeInfo.currentTime,
-        isRestricted: device.deviceType === 'mobile' &&
-            (timeInfo.hours < 10 || timeInfo.hours >= 13)
-    });
+  res.json({
+    browser: device.browser,
+    os: device.os,
+    deviceType: deviceType,
+    ip: device.ip,
+    timezone: device.timezone,
+    location: device.location,
+    currentTime: currentTime,
+    isRestricted: isRestricted
+  });
 };

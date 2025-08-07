@@ -1,4 +1,4 @@
-import User from '../models/auth.js';
+import User from "../models/user.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from 'crypto';
@@ -52,7 +52,6 @@ export const signup = async (req, res) => {
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
-
   try {
     const device = getDeviceInfo(req);
   
@@ -70,13 +69,13 @@ export const login = async (req, res) => {
     if (!existinguser) {
       return res.status(404).json({ message: "User doesn't exist" });
     }
-
-    const ispasswordcrct = await bcrypt.compare(password, existinguser.password);
+   
+    const ispasswordcrct = await bcrypt.compare(password, existinguser.password); 
     if (!ispasswordcrct) {
       return res.status(400).json({ message: "Invalid password" });
     }
-
-    if (device.browser === 'Chrome') {
+    console.log(device.browser)
+    if (device.browser === 'Chrome' || device.browser === 'Mobile Chrome') {
       const otp = crypto.randomInt(100000, 999999).toString();
       const otpExpiry = new Date(Date.now() + 5 * 60000);
       

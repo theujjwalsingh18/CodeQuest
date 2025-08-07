@@ -23,9 +23,9 @@ app.use(fileUpload({
 
 app.use("/user", mobileTimeRestriction, userroutes);
 app.use("/auth", mobileTimeRestriction, authRoutes)
-app.use('/questions',mobileTimeRestriction, questionroutes)
-app.use('/answer', mobileTimeRestriction, answerroutes)
-app.get('/get-time',getDeviceTime)
+app.use('/questions', mobileTimeRestriction, questionroutes)
+app.use('/answer', mobileTimeRestriction, answerroutes);
+app.get('/get-time', getDeviceTime)
 app.get('/', (req, res) => {
   res.send("Stakify is running perfect")
 })

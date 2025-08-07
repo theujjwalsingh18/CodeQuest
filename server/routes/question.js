@@ -9,5 +9,4 @@ questionroutes.get('/get',getallquestion);
 questionroutes.delete("/delete/:id",auth,deletequestion);
 questionroutes.patch("/vote/:id",auth,votequestion)
 
-
 export default questionroutes;

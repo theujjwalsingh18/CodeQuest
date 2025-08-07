@@ -1,16 +1,18 @@
 import mongoose from "mongoose"
-import User from '../models/auth.js';
+import User from "../models/user.js";
 
 export const getallUsers = async (req, res) => {
   try {
     const allUsers = await User.find();
-    // console.log('Users found:', allUsers);
     const alluserdetails = allUsers.map((user) => ({
       _id: user._id,
       name: user.name,
       about: user.about,
       tags: user.tags,
       joinedon: user.joinedon,
+      questionCount: user.questionCount,
+      answerCount: user.answerCount,
+      points: user.points
     }));
     res.status(200).json(alluserdetails);
   } catch (error) {
@@ -59,7 +61,7 @@ export const getLoginHistory = async (req, res) => {
 
     const history = user.loginHistory.sort((a, b) => 
       new Date(b.timestamp) - new Date(a.timestamp)
-    );
+    ).slice(0, 10);
 
     res.status(200).json(history);
   } catch (err) {
