@@ -15,7 +15,13 @@ app.set('trust proxy', true);
 dotenv.config();
 app.use(express.json({ limit: '50mb', extended: true }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(cors());
+app.use(cors({
+  origin: [
+    "https://codequest-app.netlify.app",
+    "http://localhost:3000"
+  ],
+  credentials: true
+}));
 // app.use(fileUpload({
 //   useTempFiles: false,
 //   limits: { fileSize: 50 * 1024 * 1024 }
@@ -31,7 +37,7 @@ app.use(fileUpload({
 
 app.use("/user", mobileTimeRestriction, userroutes);
 app.use("/auth", mobileTimeRestriction, authRoutes)
-app.use('/questions', mobileTimeRestriction, questionroutes)
+app.use('/questions', questionroutes)
 app.use('/answer', mobileTimeRestriction, answerroutes);
 app.get('/get-time', getDeviceTime)
 app.get('/', (req, res) => {
