@@ -13,12 +13,20 @@ import mobileTimeRestriction from "./middleware/mobileTimeRestriction.js";
 const app = express();
 app.set('trust proxy', true);
 dotenv.config();
-app.use(express.json({ limit: '30mb', extended: true }));
-app.use(express.urlencoded({ limit: '30mb', extended: true }));
+app.use(express.json({ limit: '50mb', extended: true }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors());
+// app.use(fileUpload({
+//   useTempFiles: false,
+//   limits: { fileSize: 50 * 1024 * 1024 }
+// }));
 app.use(fileUpload({
-  useTempFiles: false,
-  limits: { fileSize: 50 * 1024 * 1024 }
+  useTempFiles: true,
+  tempFileDir: '/tmp/',
+  limits: { 
+    fileSize: 50 * 1024 * 1024
+  },
+  abortOnLimit: true
 }));
 
 app.use("/user", mobileTimeRestriction, userroutes);
@@ -45,3 +53,6 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
+
+const server = app.listen(PORT, () => console.log(`Running on ${PORT}`));
+server.setTimeout(120000);
