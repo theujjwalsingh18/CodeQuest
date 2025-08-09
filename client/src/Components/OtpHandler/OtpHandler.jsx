@@ -21,7 +21,7 @@ const OtpHandler = ({
 }) => {
   const [otp, setOtp] = useState('');
   const [message, setMessage] = useState('');
-  const [resendTime, setResendTime] = useState(60);
+  const [resendTime, setResendTime] = useState(0);
   const [loading, setLoading] = useState(false);
   const [autoCloseCountdown, setAutoCloseCountdown] = useState(5);
   const [resendLoading, setResendLoading] = useState(false);
@@ -33,7 +33,7 @@ const OtpHandler = ({
   const timerRef = useRef(null);
   const initialSendDone = useRef(false);
   const dispatch = useDispatch();
-  
+
   useEffect(() => {
     if (initialError === 'daily_limit_exceeded') {
       setDailyLimitExceeded(true);
@@ -41,19 +41,38 @@ const OtpHandler = ({
     }
   }, [initialError]);
 
+  const startResendTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    
+    setResendTime(60);
+    
+    timerRef.current = setInterval(() => {
+      setResendTime(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
   const sendOtpRequest = useCallback(async (isResend = false) => {
     setMessage('');
     setOtp('');
-    setResendTime(60);
     setDailyLimitExceeded(false);
-    
+
     try {
       const action = isResend ? setResendLoading : setLoading;
       action(true);
+      
       if (purpose === 'browserVerification' && isResend && onResend) {
         const result = await onResend();
         if (result?.otpRequired) {
           setMessage('New OTP sent! Please check your email.');
+          startResendTimer();
           if (otpInputRef.current) {
             otpInputRef.current.focus();
           }
@@ -61,19 +80,20 @@ const OtpHandler = ({
         }
         return false;
       }
-      
+
       const result = await dispatch(sendOtp({ email, purpose }));
-      
+
       if (result?.success) {
         setMessage(isResend ? 'OTP resent successfully!' : 'OTP sent successfully!');
+        startResendTimer();
         if (otpInputRef.current) {
           otpInputRef.current.focus();
         }
         return true;
       } else {
         const errorMsg = result?.message || 'Failed to send OTP';
-        if (result?.status === 429 || 
-            errorMsg.includes("Only one password reset attempt allowed per day")) {
+        if (result?.status === 429 ||
+          errorMsg.includes("Only one password reset attempt allowed per day")) {
           setDailyLimitExceeded(true);
           setErrorMessage(errorMsg);
           if (onDailyLimitExceeded) {
@@ -91,7 +111,7 @@ const OtpHandler = ({
       setResendLoading(false);
       setLoading(false);
     }
-  }, [dispatch, email, purpose, onDailyLimitExceeded, onResend]);
+  }, [dispatch, email, purpose, onDailyLimitExceeded, onResend, startResendTimer]);
 
   useEffect(() => {
     if (autoSend && !initialSendDone.current && !dailyLimitExceeded) {
@@ -115,25 +135,19 @@ const OtpHandler = ({
         });
       }, 1000);
     }
-    
+
     return () => {
       if (timer) clearInterval(timer);
     };
   }, [dailyLimitExceeded, onClose]);
 
   useEffect(() => {
-    if (resendTime > 0 && !dailyLimitExceeded) {
-      timerRef.current = setInterval(() => {
-        setResendTime(prev => prev - 1);
-      }, 1000);
-    } else if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
     };
-  }, [resendTime, dailyLimitExceeded]);
+  }, []);
 
   const handleOtpChange = (e) => {
     const value = e.target.value;
@@ -144,7 +158,7 @@ const OtpHandler = ({
 
   const handleVerify = async (e) => {
     e.preventDefault();
-    
+
     if (otp.length !== 6) {
       setMessage('Please enter a valid 6-digit OTP');
       return;
@@ -157,7 +171,7 @@ const OtpHandler = ({
         const success = await onVerify(otp);
         if (success) return;
         setMessage('OTP verification failed');
-      }else {
+      } else {
         result = await dispatch(verifyOtp({ email, otp, purpose }));
         if (result?.success) {
           onVerify();
@@ -188,7 +202,7 @@ const OtpHandler = ({
               </button>
             )}
           </div>
-          
+
           <div className="otp-modal-grid">
             <div className="otp-modal-image-2">
               <img
@@ -197,7 +211,7 @@ const OtpHandler = ({
                 className="verification-image"
               />
             </div>
-            
+
             <div className="otp-modal-form-container">
               <div className="otp-modal-header">
                 <h2>Daily Limit Reached</h2>
@@ -210,7 +224,7 @@ const OtpHandler = ({
                 <p className="auto-close-message">
                   This message will close automatically in {autoCloseCountdown} seconds...
                 </p>
-                
+
                 <div className="resend-container">
                   <button
                     type="button"
@@ -238,7 +252,7 @@ const OtpHandler = ({
             </button>
           )}
         </div>
-        
+
         <div className="otp-modal-grid">
           <div className="otp-modal-image">
             <img
@@ -247,7 +261,7 @@ const OtpHandler = ({
               className="verification-image"
             />
           </div>
-          
+
           <div className="otp-modal-form-container">
             <div className="otp-modal-header">
               <h2>{headerText}</h2>

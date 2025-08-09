@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { React, useState, useEffect } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './UserProfile.css';
 
-const LocationSection = ({ isCurrentUser }) => {
+const LocationSection = () => {
   const [location, setLocation] = useState(null);
   const [address, setAddress] = useState('');
   const [weather, setWeather] = useState(null);
@@ -125,18 +125,14 @@ const LocationSection = ({ isCurrentUser }) => {
   return (
     <div className="location-section">
       <div className="section-header">
-        {isCurrentUser && (
-          <>
-            <h2><i className="fas fa-map-marker-alt"></i> Location Information</h2>
-            <button
-              className="location-toggle"
-              onClick={showMap ? handleToggleMap : getLocation}
-            >
-              <i className="fas fa-map"></i>
-              {showMap ? "Hide Map & Weather" : "Get My Location"}
-            </button>
-          </>
-        )}
+        <h2><i className="fas fa-map-marker-alt"></i> Location Information</h2>
+        <button
+          className="location-toggle"
+          onClick={showMap ? handleToggleMap : getLocation}
+        >
+          <i className="fas fa-map"></i>
+          {showMap ? "Hide Map & Weather" : "Get My Location"}
+        </button>
       </div>
 
       {error && <div className="error-message">{error}</div>}

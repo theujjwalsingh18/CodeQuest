@@ -15,6 +15,7 @@ export const postanswer = async (req, res) => {
             $addToSet: { answer: [{ answerbody, useranswered, userid }] },
             $inc: { noofanswers: 1 }
         }, { new: true });
+        
         const updatedUser = await User.findByIdAndUpdate(userid, {
             $inc: {
                 answerCount: 1,
@@ -56,11 +57,10 @@ export const deleteanswer = async (req, res) => {
         if (!answer) {
             return res.status(404).send("Answer not found");
         }
-
-        let pointsToDeduct = 5;
-        if (answer.upvote.length >= 5) {
-            pointsToDeduct += 5;
-        }
+        
+        const basePoints = 5;
+        const bonusPoints = 5 * Math.floor(answer.upvote.length / 5);
+        const pointsToDeduct = basePoints + bonusPoints;
 
         await Question.findByIdAndUpdate(_id, {
             $pull: { answer: { _id: answerid } },
@@ -73,6 +73,7 @@ export const deleteanswer = async (req, res) => {
                 points: -pointsToDeduct
             }
         }, { new: true, select: '_id points name email' });
+        
         res.status(200).json({
             message: "Successfully deleted answer",
             updatedUser: {
@@ -144,11 +145,9 @@ export const voteanswer = async (req, res) => {
         const newUpvoteCount = answer.upvote.length;
         await question.save();
 
-        if (oldUpvoteCount < 5 && newUpvoteCount >= 5) {
-            pointChangeForAuthor = 5;
-        } else if (oldUpvoteCount >= 5 && newUpvoteCount < 5) {
-            pointChangeForAuthor = -5;
-        }
+        const oldMilestones = Math.floor(oldUpvoteCount / 5);
+        const newMilestones = Math.floor(newUpvoteCount / 5);
+        pointChangeForAuthor = 5 * (newMilestones - oldMilestones);
 
         let updatedUser = null;
         if (pointChangeForAuthor !== 0) {

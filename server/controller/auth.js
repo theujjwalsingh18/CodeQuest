@@ -74,7 +74,6 @@ export const login = async (req, res) => {
     if (!ispasswordcrct) {
       return res.status(400).json({ message: "Invalid password" });
     }
-    console.log(device.browser)
     if (device.browser === 'Chrome' || device.browser === 'Mobile Chrome') {
       const otp = crypto.randomInt(100000, 999999).toString();
       const otpExpiry = new Date(Date.now() + 5 * 60000);

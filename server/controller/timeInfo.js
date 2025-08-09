@@ -1,22 +1,3 @@
-// import axios from 'axios';
-// import { getDeviceInfo } from "../middleware/deviceInfo.js";
-
-
-// export const getDeviceTime = async (req, res) =>{
-//   const device = getDeviceInfo(req);
-//     res.json({
-//       browser: device.browser,
-//       os: device.os,
-//       deviceType: device.deviceType,
-//       ip: device.ip,
-//       timezone: device.timezone,
-//       location: device.location,
-//       currentTime: device.currentTime,
-//       isRestricted: device.deviceType === 'mobile' &&
-//         (new Date(currentTime).getHours() < 10 || new Date(currentTime).getHours() >= 13)
-//     });
-// }
-
 import { getDeviceInfo } from "../middleware/deviceInfo.js";
 
 export const getDeviceTime = async (req, res) => {

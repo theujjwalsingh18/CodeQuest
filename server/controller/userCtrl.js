@@ -61,7 +61,7 @@ export const getLoginHistory = async (req, res) => {
 
     const history = user.loginHistory.sort((a, b) => 
       new Date(b.timestamp) - new Date(a.timestamp)
-    ).slice(0, 10);
+    );
 
     res.status(200).json(history);
   } catch (err) {

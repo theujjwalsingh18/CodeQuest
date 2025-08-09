@@ -5,7 +5,6 @@ import cloudinary from '../config/cloudinary.js';
 import stream  from "stream";
 const deleteWithRetry = async (publicId, attempts = 0) => {
     const maxAttempts = 5;
-
     try {
         console.log(`Deleting ${publicId} (attempt ${attempts + 1})`);
         await cloudinary.uploader.destroy(publicId, {
@@ -131,27 +130,48 @@ export const deletequestion = async (req, res) => {
       return res.status(404).json({ message: "Question not found" });
     }
 
+    const updatedUsers = [];
+    for (const answer of question.answer) {
+      const basePoints = 5;
+      const bonusPoints = 5 * Math.floor(answer.upvote.length / 5);
+      const pointsToDeduct = basePoints + bonusPoints;
+
+      const updatedUser = await User.findByIdAndUpdate(
+        answer.userid,
+        {
+          $inc: {
+            points: -pointsToDeduct,
+            answerCount: -1
+          }
+        },
+        { new: true, select: '_id points name email answerCount' }
+      );
+      
+      if (updatedUser) {
+        updatedUsers.push(updatedUser);
+      }
+    }
     if (question.publicId) {
       await cloudinary.uploader.destroy(question.publicId, {
         resource_type: "video"
       });
     }
 
-    const updatedUser = await User.findByIdAndUpdate(question.userid, {
+    const ownerUpdate = await User.findByIdAndUpdate(question.userid, {
       $inc: {
         questionCount: -1,
       }
-    }, { new: true, select: '_id points name email' });
+    }, { new: true, select: '_id points name email questionCount' });
+
+    if (ownerUpdate) {
+      updatedUsers.push(ownerUpdate);
+    }
 
     await Question.findByIdAndDelete(_id);
+    
     res.status(200).json({
       message: "Successfully deleted question",
-      updatedUser: {
-        _id: updatedUser._id,
-        points: updatedUser.points,
-        name: updatedUser.name,
-        email: updatedUser.email
-      }
+      updatedUsers
     });
   } catch (error) {
     console.error("Error in deletequestion:", error);

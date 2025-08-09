@@ -7,16 +7,25 @@
   align-items: center;
   padding: 20px;
   box-sizing: border-box;
+  flex-direction: column;
 }
 
 .auth-container-1 {
-  padding: 20px;
-  margin-right: 30px;
+  margin: 0 0 30px 0;
+  width: 100%;
+  max-width: 500px;
+  text-align: center;
+  padding: 0 15px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .login-logo {
-  scale: 1.5;
-  padding: 20px 30px;
+  width: 80px;
+  height: auto;
+  padding: 10px 0;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -khtml-user-select: none;
@@ -33,16 +42,19 @@
   align-items: center;
   width: 100%;
   max-width: 450px;
+  padding: 0 15px;
+  box-sizing: border-box;
 }
 
 .signup-heading {
   width: 100%;
   max-width: 350px;
+  margin: 0 auto;
 }
 
 .auth-container-2 form {
   width: 100%;
-  padding: 20px;
+  padding: 25px;
   background-color: white;
   border-radius: 10px;
   display: flex;
@@ -59,6 +71,7 @@
   border: solid 1px #0000003e;
   font-size: 14px;
   box-sizing: border-box;
+  border-radius: 4px;
 }
 
 .auth-container-2 form label:nth-child(1) h4,
@@ -110,7 +123,7 @@
   width: 100%;
   max-width: 450px;
   margin: 0 auto;
-  padding: 15px;
+  padding: 25px;
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -150,6 +163,49 @@
   color: #7f8c8d;
   font-size: 15px;
   line-height: 1.5;
+  margin: 0;
+}
+
+.password-container {
+  position: relative;
+}
+
+.password-container input {
+  padding-right: 40px;
+  width: 100%;
+}
+
+.toggle-password-visibility {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6a737c;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.toggle-password-visibility:hover {
+  opacity: 1;
+}
+
+.toggle-password-visibility:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.toggle-password-visibility svg {
+  width: 16px;
+  height: 16px;
 }
 
 .message {
@@ -261,10 +317,11 @@
   gap: 12px;
   margin-bottom: 25px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .otp-digit {
-  flex: 1;
+  flex: 0 0 15%;
   min-width: 50px;
   height: 60px;
   text-align: center;
@@ -379,241 +436,6 @@
   animation: countdownPulse 1s infinite;
 }
 
-@media screen and (max-width: 1200px) {
-  .auth-container-1 {
-    padding: 15px;
-    margin-right: 20px;
-  }
-
-  .reset-password-container {
-    max-width: 400px;
-  }
-}
-
-@media screen and (max-width: 992px) {
-  .auth-section {
-    flex-direction: column;
-    padding: 30px 20px;
-  }
-
-  .auth-container-1 {
-    margin-right: 0;
-    margin-bottom: 30px;
-    text-align: center;
-  }
-
-  .reset-password-container {
-    max-width: 100%;
-  }
-}
-
-@media screen and (max-width: 768px) {
-  .auth-container-2 form {
-    padding: 15px;
-  }
-
-  .reset-password-container {
-    padding: 20px;
-    border-radius: 10px;
-  }
-
-  .password-header h2,
-  .otp-header h2 {
-    font-size: 22px;
-  }
-
-  .otp-digit {
-    height: 55px;
-    font-size: 20px;
-    min-width: 45px;
-  }
-
-  .generate-password-btn {
-    padding: 10px;
-    font-size: 14px;
-  }
-
-  .password-tip {
-    font-size: 12px;
-  }
-}
-
-@media screen and (max-width: 576px) {
-  .auth-section {
-    padding: 20px 15px;
-  }
-
-  .auth-container-2 {
-    max-width: 100%;
-  }
-
-  .reset-password-container {
-    padding: 15px;
-    box-shadow: none;
-  }
-
-  .go-back-btn {
-    font-size: 14px;
-    margin-bottom: 15px;
-  }
-
-  .password-header h2,
-  .otp-header h2 {
-    font-size: 20px;
-  }
-
-  .password-header p,
-  .otp-header p {
-    font-size: 14px;
-  }
-
-  .otp-input-container {
-    gap: 8px;
-  }
-
-  .otp-digit {
-    height: 50px;
-    min-width: 40px;
-    font-size: 18px;
-  }
-
-  .password-strength {
-    margin-top: 5px;
-    font-size: 12px;
-  }
-
-  .password-input-group input {
-    padding: 12px;
-    font-size: 14px;
-  }
-
-  .auth-btn,
-  .update-btn,
-  .verify-btn {
-    padding: 12px;
-    font-size: 15px;
-  }
-
-  .generate-password-btn {
-    font-size: 13px;
-    padding: 10px;
-  }
-
-  .password-tip {
-    font-size: 11px;
-  }
-
-  .toggle-password-visibility {
-    right: 10px;
-  }
-}
-
-@media screen and (max-width: 480px) {
-  .auth-container-2 form {
-    padding: 15px 12px;
-  }
-
-  .reset-password-container {
-    padding: 15px 12px;
-    border-radius: 8px;
-  }
-
-  .otp-digit {
-    height: 45px;
-    min-width: 35px;
-    font-size: 16px;
-  }
-
-  .password-header h2,
-  .otp-header h2 {
-    font-size: 18px;
-    margin-bottom: 5px;
-  }
-
-  .password-header p,
-  .otp-header p {
-    font-size: 13px;
-    margin-bottom: 15px;
-  }
-
-  .password-input-group {
-    margin-bottom: 15px;
-  }
-
-  .password-generator-container {
-    padding: 12px;
-  }
-
-  .generate-password-btn svg {
-    width: 14px;
-    height: 14px;
-  }
-
-  .password-tip svg {
-    width: 12px;
-    height: 12px;
-  }
-}
-
-@media screen and (max-width: 400px) {
-  .otp-input-container {
-    justify-content: center;
-  }
-
-  .otp-digit {
-    flex: 0 0 calc(20% - 8px);
-    max-width: calc(20% - 8px);
-  }
-
-  .auth-btn {
-    font-size: 14px;
-  }
-
-  .handle-switch-btn {
-    font-size: 13px;
-  }
-
-  .forgot-password-btn {
-    font-size: 13px;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
-  .reset-password-container {
-    max-width: 500px;
-  }
-
-  .password-input-group {
-    margin-bottom: 25px;
-  }
-}
-
-.otp-modal-content {
-  width: 90%;
-  max-width: 800px;
-  box-sizing: border-box;
-}
-
-@media (max-width: 768px) {
-  .otp-modal-grid {
-    flex-direction: column;
-  }
-
-  .otp-input-container {
-    flex-direction: column;
-  }
-
-  .otp-input {
-    width: 100% !important;
-    margin-bottom: 10px;
-  }
-
-  .verify-btn {
-    width: 100%;
-  }
-}
-
-
 .password-strength.weak::before {
   content: "• ";
   color: #ff4d4f;
@@ -629,18 +451,15 @@
   color: #52c41a;
 }
 
-
 .auth-form {
   width: 100%;
   box-sizing: border-box;
 }
 
-
 .auth-btn,
 .generate-password-btn {
   min-height: 44px;
 }
-
 
 .otp-sending-overlay {
   display: flex;
@@ -662,7 +481,6 @@
   color: #333;
 }
 
-/* OTP Form Styling */
 .otp-form {
   width: 100%;
   max-width: 400px;
@@ -718,8 +536,309 @@
   text-decoration: underline;
 }
 
-
 button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.auth-content {
+  max-width: 450px;
+  width: 100%;
+}
+
+@media screen and (min-width: 993px) {
+  .auth-section {
+    flex-direction: row;
+    align-items: center;
+    padding-top: 50px;
+  }
+
+  .auth-container-1 {
+    margin-right: 30px;
+    margin-top: 0;
+    max-width: 450px;
+  }
+
+  .auth-container-2 {
+    margin-top: 50px;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .auth-section {
+    justify-content: center;
+    gap: 50px;
+  }
+  
+  .auth-container-1 {
+    max-width: 500px;
+  }
+}
+
+@media screen and (max-width: 1200px) and (min-width: 993px) {
+  .auth-container-1 {
+    margin-right: 20px;
+    max-width: 400px;
+  }
+}
+
+@media screen and (max-width: 992px) {
+  .auth-section {
+    flex-direction: column;
+    padding: 30px 20px;
+  }
+
+  .auth-container-1 {
+    margin-right: 0;
+    margin-bottom: 30px;
+    text-align: center;
+    max-width: 100%;
+    order: 2;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+  }
+
+  .auth-container-2 {
+    order: 1;
+    margin-top: 0;
+    max-width: 100%;
+  }
+
+  .reset-password-container {
+    max-width: 100%;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .auth-container-2 form {
+    padding: 20px;
+  }
+
+  .reset-password-container {
+    padding: 20px;
+    border-radius: 10px;
+  }
+
+  .password-header h2,
+  .otp-header h2 {
+    font-size: 22px;
+  }
+
+  .otp-digit {
+    height: 55px;
+    font-size: 20px;
+    min-width: 45px;
+  }
+
+  .generate-password-btn {
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  .password-tip {
+    font-size: 12px;
+  }
+}
+
+@media screen and (max-width: 576px) {
+  .auth-section {
+    padding: 20px 15px;
+  }
+
+  .auth-container-1 {
+    margin-top: 0;
+    margin-bottom: 20px;
+  }
+
+  .auth-container-2 form {
+    padding: 20px 15px;
+  }
+
+  .reset-password-container {
+    padding: 15px;
+  }
+
+  .go-back-btn {
+    font-size: 14px;
+    margin-bottom: 15px;
+  }
+
+  .password-header h2,
+  .otp-header h2 {
+    font-size: 20px;
+  }
+
+  .password-header p,
+  .otp-header p {
+    font-size: 14px;
+  }
+
+  .otp-input-container {
+    gap: 8px;
+  }
+
+  .otp-digit {
+    height: 50px;
+    min-width: 40px;
+    font-size: 18px;
+    flex: 0 0 22%;
+  }
+
+  .password-strength {
+    margin-top: 5px;
+    font-size: 12px;
+  }
+
+  .password-input-group input {
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .auth-btn,
+  .update-btn,
+  .verify-btn {
+    padding: 12px;
+    font-size: 15px;
+  }
+
+  .generate-password-btn {
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  .password-tip {
+    font-size: 11px;
+  }
+
+  .toggle-password-visibility {
+    right: 10px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .auth-container-2 form,
+  .reset-password-container {
+    padding: 15px 12px;
+    border-radius: 8px;
+    margin-top: 5vh;
+  }
+
+  .otp-digit {
+    height: 45px;
+    min-width: 35px;
+    font-size: 16px;
+    flex: 0 0 20%;
+  }
+
+  .password-header h2,
+  .otp-header h2 {
+    font-size: 18px;
+    margin-bottom: 5px;
+  }
+
+  .password-header p,
+  .otp-header p {
+    font-size: 13px;
+    margin-bottom: 15px;
+  }
+
+  .password-input-group {
+    margin-bottom: 15px;
+  }
+
+  .password-generator-container {
+    padding: 12px;
+  }
+
+  .generate-password-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .password-tip svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+@media screen and (max-width: 400px) {
+  .otp-digit {
+    flex: 0 0 18%;
+    min-width: 30px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .auth-btn {
+    font-size: 14px;
+  }
+
+  .handle-switch-btn {
+    font-size: 13px;
+  }
+
+  .forgot-password-btn {
+    font-size: 13px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+  .reset-password-container {
+    max-width: 500px;
+  }
+
+  .password-input-group {
+    margin-bottom: 25px;
+  }
+}
+
+@media (max-width: 768px) {
+  .otp-modal-grid {
+    flex-direction: column;
+  }
+
+  .otp-input-container {
+    flex-direction: row;
+    justify-content: center;
+  }
+  
+  .otp-input {
+    width: 100% !important;
+    margin-bottom: 10px;
+  }
+
+  .verify-btn {
+    width: 100%;
+  }
+}
+
+@media only screen 
+  and (min-device-width: 768px) 
+  and (max-device-width: 1024px) 
+  and (-webkit-min-device-pixel-ratio: 1) {
+  .auth-section {
+    padding-top: 100px;
+  }
+  
+  .auth-container-1 {
+    max-width: 400px;
+    margin-right: 30px;
+  }
+  
+  .auth-container-2 {
+    max-width: 400px;
+  }
+}
+
+.auth-center-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  box-sizing: border-box;
 }

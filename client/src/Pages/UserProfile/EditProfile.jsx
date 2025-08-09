@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useDispatch } from 'react-redux'
+import useToast from '../../hooks/useToast'
 import { updateprofile } from '../../Action/users'
 import './UserProfile.css'
 const EditProfile = ({ currentuser, setswitch }) => {
@@ -7,11 +8,12 @@ const EditProfile = ({ currentuser, setswitch }) => {
   const [about, setabout] = useState(currentuser?.result?.about)
   const [tags, settags] = useState([])
   const dispatch=useDispatch()
+  const { warningToast } = useToast();
 
   const handlesubmit = (e) => {
     e.preventDefault()
     if (tags[0] === '' || tags.length === 0) {
-      alert("update tags field")
+      warningToast("update tags field")
     }else{
       dispatch(updateprofile(currentuser?.result?._id,{name,about,tags}))
     }

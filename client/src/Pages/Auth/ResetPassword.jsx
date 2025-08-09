@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
-import { toast } from 'react-toastify';
+import useToast from '../../hooks/useToast'
 import { updatePassword, sendOtp } from '../../Action/Auth';
 import './Auth.css';
 import OtpHandler from '../../Components/OtpHandler/OtpHandler';
 
 const ResetPassword = ({ email, onBack }) => {
+  const { successToast, errorToast, warningToast } = useToast();
   const [step, setStep] = useState(0);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -31,12 +32,12 @@ const ResetPassword = ({ email, onBack }) => {
             result?.message?.includes("Only one password reset attempt allowed per day")) {
             setInitialOtpError('daily_limit_exceeded');
           } else {
-            toast.error(result?.message || 'Failed to send OTP');
+            errorToast(result?.message || 'Failed to send OTP');
             onBack();
           }
         }
       } catch (error) {
-        toast.error('Failed to send OTP');
+        errorToast('Failed to send OTP');
         onBack();
       } finally {
         setSendingInitialOtp(false);
@@ -68,15 +69,6 @@ const ResetPassword = ({ email, onBack }) => {
     );
   }, [newPassword]);
 
-  const showToast = (message, type = 'error') => {
-    toast[type](message, {
-      position: "top-right",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: true,
-    });
-  };
-
   const handleVerifyOtpSuccess = () => {
     setStep(2);
   };
@@ -85,11 +77,11 @@ const ResetPassword = ({ email, onBack }) => {
     e.preventDefault();
 
     if (newPassword !== confirmPassword) {
-      showToast("Passwords don't match");
+      errorToast("Passwords don't match");
       return;
     }
     if (newPassword.length < 8) {
-      showToast("Password must be at least 8 characters");
+      warningToast("Password must be at least 8 characters");
       return;
     }
 
@@ -98,13 +90,13 @@ const ResetPassword = ({ email, onBack }) => {
       const result = await dispatch(updatePassword({ email, newPassword }));
 
       if (result?.success) {
-        showToast("Password updated successfully! Redirecting to login...", 'success');
+        successToast("Password updated successfully! Redirecting to login...");
         setTimeout(() => onBack(), 2000);
       } else {
-        showToast(result?.message || 'Password update failed');
+        errorToast(result?.message || 'Password update failed');
       }
     } catch (error) {
-      showToast('Password update failed');
+      errorToast('Password update failed');
     } finally {
       setLoading(false);
     }
@@ -133,7 +125,7 @@ const ResetPassword = ({ email, onBack }) => {
     setNewPassword(newPass);
     setConfirmPassword(newPass);
     setPasswordStrength('Strong');
-    showToast('Secure password generated!', 'success');
+    successToast('Secure password generated!');
   };
 
   return (

@@ -9,6 +9,7 @@ export const signup = (authdata, navigate) => async (dispatch) => {
     dispatch(setcurrentuser(JSON.parse(localStorage.getItem("Profile"))));
     dispatch(fetchallusers());
     navigate("/");
+    return { success: true, message: "Account created successfully!" };
   } catch (error) {
     console.log(error);
     return { success: false, message: error.response?.data?.message || 'Signup failed' };
@@ -33,7 +34,7 @@ export const login = (authdata, navigate) => async (dispatch) => {
     return { success: true };
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Invalid login credentials';
-    alert(`Login failed: ${errorMessage}`);
+    // alert(`Login failed: ${errorMessage}`);
     console.log(error);
     return { success: false, message: errorMessage };
   }
@@ -50,7 +51,7 @@ export const verifyLoginOtp = (otpData, navigate) => async (dispatch) => {
     return { success: true };
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'OTP verification failed';
-    alert(`Verification failed: ${errorMessage}`);
+    // alert(`Verification failed: ${errorMessage}`);
     console.error("OTP verification error:", error);
     return { success: false, message: errorMessage };
   }

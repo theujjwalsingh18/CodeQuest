@@ -1,92 +1,145 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { isMobile } from 'react-device-detect';
+import { getTimeInfo } from '../../api';
 import './TimeRestriction.css';
 
 const TimeRestriction = ({ children }) => {
   const [showRestriction, setShowRestriction] = useState(false);
-  const [countdown, setCountdown] = useState('');
-  const [timezone, setTimezone] = useState('Local Time');
+  const [countdown, setCountdown] = useState('--:--:--');
+  const [displayCurrentTime, setDisplayCurrentTime] = useState('--:--:--');
+  const [timeInfo, setTimeInfo] = useState({
+    timezone: 'Loading...',
+    location: 'Loading...',
+  });
+
   const navigate = useNavigate();
   const location = useLocation();
+  const initialBackendSecondsRef = useRef(0);
+  const initialClientTimeRef = useRef(0);
+
+  const formatToAMPM = (timeStr) => {
+    if (timeStr === '--:--:--') return '--:--:--';
+    
+    const [hours, minutes, seconds] = timeStr.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const adjustedHours = hours % 12 || 12; 
+    
+    return `${adjustedHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} ${period}`;
+  };
+
+  const fetchTimeInfo = async () => {
+    try {
+      const { data } = await getTimeInfo();
+      setTimeInfo({
+        timezone: data.timezone || 'Unknown',
+        location: data.location || 'Unknown location'
+      });
+
+      if (data.isRestricted && location.pathname !== '/') {
+        navigate('/', { replace: true });
+      }
+
+      if (data.isRestricted) {
+        const [hours, minutes, seconds] = data.currentTime.split(':').map(Number);
+        initialBackendSecondsRef.current = hours * 3600 + minutes * 60 + seconds;
+        initialClientTimeRef.current = Date.now();
+        
+        const times = calculateTimes();
+        setDisplayCurrentTime(times.currentTime);
+        setCountdown(times.countdown);
+      }
+
+      setShowRestriction(data.isRestricted);
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch time info:', error);
+      return null;
+    }
+  };
+
+  const calculateTimes = () => {
+    if (initialBackendSecondsRef.current === null || initialClientTimeRef.current === null) {
+      return { 
+        currentTime: '--:--:--', 
+        countdown: '--:--:--',
+        message: 'Calculating...'
+      };
+    }
+
+    const now = Date.now();
+    const elapsedSeconds = Math.floor((now - initialClientTimeRef.current) / 1000);
+    let currentSeconds = (initialBackendSecondsRef.current + elapsedSeconds) % 86400;
+    
+    if (currentSeconds < 0) currentSeconds += 86400;
+    const hours = Math.floor(currentSeconds / 3600);
+    const minutes = Math.floor((currentSeconds % 3600) / 60);
+    const seconds = Math.floor(currentSeconds % 60);
+    const currentTimeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+    const startSeconds = 10 * 3600;  // 10:00 AM
+    const endSeconds = 13 * 3600;    // 1:00 PM
+    let targetSeconds;
+    let message = 'Access will be available in:';
+    
+    if (currentSeconds < startSeconds) {
+      targetSeconds = startSeconds;
+    } else if (currentSeconds >= endSeconds) {
+      targetSeconds = startSeconds + 86400;
+      message = 'Access will resume tomorrow in:';
+    } else {
+      targetSeconds = endSeconds;
+      message = 'Access ending in:';
+    }
+    
+    let diffSeconds = targetSeconds - currentSeconds;
+    if (diffSeconds < 0) diffSeconds = 0;
+    
+    const hrs = Math.floor(diffSeconds / 3600);
+    const mins = Math.floor((diffSeconds % 3600) / 60);
+    const secs = Math.floor(diffSeconds % 60);
+    const countdownStr = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+    return { 
+      currentTime: currentTimeStr, 
+      countdown: countdownStr,
+      message
+    };
+  };
 
   useEffect(() => {
-    const calculateCountdown = (now) => {
-      const hours = now.getHours();
-      const minutes = now.getMinutes();
-      const currentMinutes = hours * 60 + minutes;
-      
-      const startMinutes = 10 * 60; // 10:00 AM
-      const endMinutes = 13 * 60;   // 1:00 PM
-      
-      let targetTime;
-      
-      if (currentMinutes < startMinutes) {
-        targetTime = new Date(now);
-        targetTime.setHours(10, 0, 0, 0);
-      } else if (currentMinutes >= endMinutes) {
-        targetTime = new Date(now);
-        targetTime.setDate(targetTime.getDate() + 1);
-        targetTime.setHours(10, 0, 0, 0);
-      }
-      
-      if (targetTime) {
-        const diff = targetTime - now;
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-      }
-      
-      return '';
-    };
-
-    const checkAccess = () => {
-      const apiRestricted = localStorage.getItem('mobileRestricted') === 'true';
-      
-      if (isMobile || apiRestricted) {
-        const now = new Date();
-        const hours = now.getHours();
-        const minutes = now.getMinutes();
-        const currentMinutes = hours * 60 + minutes;
-        
-        const startMinutes = 10 * 60;
-        const endMinutes = 13 * 60;
-        
-        const shouldRestrict = currentMinutes < startMinutes || currentMinutes >= endMinutes;
-        setShowRestriction(shouldRestrict || apiRestricted);
-        
-        if ((shouldRestrict || apiRestricted) && location.pathname !== '/') {
-          navigate('/', { replace: true });
-        }
-        const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        if (detectedTimezone) {
-          setTimezone(detectedTimezone.split('/').pop().replace(/_/g, ' '));
-        }
-        
-        setCountdown(calculateCountdown(now));
-      } else {
-        setShowRestriction(false);
-      }
+    const checkAccess = async () => {
+      await fetchTimeInfo();
     };
 
     checkAccess();
-    const interval = setInterval(checkAccess, 1000);
-    
+    const interval = setInterval(checkAccess, 30000);
+
     return () => clearInterval(interval);
   }, [navigate, location]);
 
   useEffect(() => {
-    if (!showRestriction) {
-      localStorage.removeItem('mobileRestricted');
+    if (showRestriction) {
+      const updateInterval = setInterval(() => {
+        const { currentTime, countdown } = calculateTimes();
+        setDisplayCurrentTime(currentTime);
+        setCountdown(countdown);
+      }, 1000);
+
+      return () => clearInterval(updateInterval);
+    } else {
+      setCountdown('--:--:--');
+      setDisplayCurrentTime('--:--:--');
     }
   }, [showRestriction]);
 
   if (showRestriction) {
-    const now = new Date();
-    const localTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
+    const displayTimezone = timeInfo.timezone
+      ? timeInfo.timezone.split('/').pop().replace(/_/g, ' ')
+      : 'Unknown';
+
+    const { message } = calculateTimes();
+    const displayTimeAMPM = formatToAMPM(displayCurrentTime);
+
     return (
       <div className="time-restriction-container">
         <div className="time-restriction-card">
@@ -98,32 +151,32 @@ const TimeRestriction = ({ children }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            
+
             <h2 className="title">Access Restricted</h2>
             <p className="subtitle">
               Mobile access is limited to specific hours in your local time
             </p>
-            
+
             <div className="info-box">
               <div className="info-row">
                 <span className="info-label">Allowed Hours:</span>
                 <span className="info-value">10:00 AM - 1:00 PM</span>
               </div>
-              
+
               <div className="info-row">
                 <span className="info-label">Your Timezone:</span>
-                <span className="info-value">{timezone}</span>
+                <span className="info-value">{displayTimezone}</span>
               </div>
-              
+
               <div className="info-row">
                 <span className="info-label">Current Time:</span>
-                <span className="info-value">{localTime}</span>
+                <span className="info-value">{displayTimeAMPM}</span>
               </div>
             </div>
-            
-            {countdown && (
+
+            {countdown !== '--:--:--' && (
               <div className="countdown-section">
-                <p className="countdown-label">Access will be available in:</p>
+                <p className="countdown-label">{message}</p>
                 <div className="countdown-timer">
                   {countdown.split(':').map((unit, index) => (
                     <div key={index} className="countdown-unit">
@@ -136,12 +189,12 @@ const TimeRestriction = ({ children }) => {
                 </div>
               </div>
             )}
-            
+
             <p className="note">
               Please use a desktop computer for full access outside these hours
             </p>
-            
-            <button 
+
+            <button
               className="refresh-button"
               onClick={() => window.location.reload()}
             >

@@ -3,11 +3,11 @@ import './Askquestion.css';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from "react-redux";
 import { askquestion } from '../../Action/question';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import useToast from '../../hooks/useToast'
 import { FaTimes } from 'react-icons/fa';
 import { MdCloudUpload } from 'react-icons/md';
 import OtpHandler from '../../Components/OtpHandler/OtpHandler';
+import { getTimeInfo } from '../../api';
 
 const calculateUploadTime = (fileSize) => {
   const uploadSpeed = 0.625;
@@ -16,6 +16,7 @@ const calculateUploadTime = (fileSize) => {
 };
 
 const Askquestion = () => {
+  const { successToast, errorToast, infoToast } = useToast();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const user = useSelector((state) => state.currentuserreducer);
@@ -31,7 +32,8 @@ const Askquestion = () => {
   const [isVideoVerified, setIsVideoVerified] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [emailVerificationRequired, setEmailVerificationRequired] = useState(false);
-  const [checkingVideo, setCheckingVideo] = useState(false);
+  const [currentTime, setCurrentTime] = useState("--:--:--");
+  const [isCheckingTime, setIsCheckingTime] = useState(true);
 
   const progressRef = useRef({
     interval: null,
@@ -42,25 +44,50 @@ const Askquestion = () => {
     savingDuration: 0
   });
 
-  useEffect(() => {
-    const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    const currentTime = hours + minutes / 60;
-
-    // 14:00 (2 PM) to 19:00 (7 PM)
-    const isAllowed = currentTime >= 1 && currentTime < 19;
-    setIsVideoAllowed(isAllowed);
-
-    if (!isAllowed && video) {
-      setVideo(null);
-      showInfo("Video upload window closed. Video removed.");
+  const isWithinVideoHours = (timeStr) => {
+    if (!timeStr || timeStr === "--:--:--") return false;
+    
+    try {
+      const [hoursStr] = timeStr.split(':');
+      const hours = parseInt(hoursStr, 10);
+      return hours >= 14 && hours < 19;
+    } catch (error) {
+      console.error('Error parsing time:', error);
+      return false;
     }
-  }, [video]);
+  };
+
+  const fetchTimeInfo = async () => {
+    try {
+      setIsCheckingTime(true);
+      const { data } = await getTimeInfo();
+      setCurrentTime(data.currentTime || "--:--:--");
+      setIsVideoAllowed(isWithinVideoHours(data.currentTime));
+    } catch (error) {
+      console.error('Failed to fetch time info:', error);
+      setCurrentTime("--:--:--");
+    } finally {
+      setIsCheckingTime(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTimeInfo();
+    const interval = setInterval(fetchTimeInfo, 2 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!isVideoAllowed && video) {
+      setVideo(null);
+      infoToast("Video upload window closed. Video removed.");
+    }
+  }, [isVideoAllowed, video]);
 
   const startVerification = async () => {
     if (!user) {
-      showError("Please login to verify for video upload");
+      errorToast("Please login to verify for video upload");
       return;
     }
     setShowVerificationModal(true);
@@ -70,11 +97,11 @@ const Askquestion = () => {
     setIsVideoVerified(true);
     setEmailVerificationRequired(false);
     setShowVerificationModal(false);
-    showSuccess("Email verified! You can now upload videos");
+    successToast("Email verified! You can now upload video");
   };
 
   const handleDailyLimitExceeded = (errorMessage) => {
-    showError(errorMessage);
+    errorToast(errorMessage);
     setShowVerificationModal(false);
   };
 
@@ -82,32 +109,24 @@ const Askquestion = () => {
     e.preventDefault();
 
     if (!user) {
-      showError("Login to ask a question");
+      errorToast("Login to ask a question");
       return;
     }
 
     if (!questionbody || !questiontitle || !questiontags) {
-      showError("Please enter all required fields");
+      errorToast("Please enter all required fields");
       return;
     }
 
     const tagsArray = questiontags.split(" ").filter(tag => tag.trim() !== "");
     if (tagsArray.length === 0) {
-      showError("Please enter at least one tag");
+      infoToast("Please enter at least one tag");
       return;
     }
 
-    if (video) {
-      if (video.size > 50 * 1024 * 1024) {
-        showError("Video file exceeds 50MB limit");
-        return;
-      }
-
-      const allowedTypes = ["video/mp4", "video/webm", "video/ogg",];
-      if (!allowedTypes.includes(video.type)) {
-        showError("Only MP4, WebM, and OGG videos are allowed");
-        return;
-      }
+    if (video && video.size > 50 * 1024 * 1024) {
+      errorToast("Video file exceeds 50MB limit");
+      return;
     }
 
     setIsUploading(true);
@@ -151,12 +170,12 @@ const Askquestion = () => {
       setUploadStatus("Finalizing...");
       setUploadProgress(100);
       setTimeout(() => {
-        showSuccess("Question posted successfully!");
+        successToast("Question posted successfully!");
         resetForm();
       }, 1000);
     } catch (err) {
       console.error(err);
-      showError(err.message || "Failed to post question");
+      errorToast(err.message || "Failed to post question");
       resetProgress();
     }
   };
@@ -228,39 +247,6 @@ const Askquestion = () => {
     };
   }, []);
 
-  const showError = (message) => {
-    toast.error(message, {
-      position: "top-right",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
-  };
-
-  const showSuccess = (message) => {
-    toast.success(message, {
-      position: "top-right",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
-  };
-
-  const showInfo = (message) => {
-    toast.info(message, {
-      position: "top-right",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
-  };
-
   const handleVideoChange = (e) => {
     const file = e.target.files[0];
     if (!file) {
@@ -270,50 +256,19 @@ const Askquestion = () => {
 
     if (!isVideoVerified) {
       setEmailVerificationRequired(true);
-      showInfo("Email verification required for video upload");
-      e.target.value = "";
-      return;
-    }
-
-    const allowedTypes = ["video/mp4", "video/webm", "video/ogg",];
-    if (!allowedTypes.includes(file.type)) {
-      showError("Only MP4, WebM, and OGG videos are allowed");
+      infoToast("Email verification required for video upload");
       e.target.value = "";
       return;
     }
 
     if (file.size > 50 * 1024 * 1024) {
-      showError("Video file exceeds 50MB limit");
+      errorToast("Video file exceeds 50MB limit");
       e.target.value = "";
       return;
     }
 
-    setCheckingVideo(true);
-    const videoElement = document.createElement('video');
-    videoElement.preload = 'metadata';
-
-    videoElement.onloadedmetadata = () => {
-      window.URL.revokeObjectURL(videoElement.src);
-      const duration = videoElement.duration;
-      if (duration > 120) { 
-        setCheckingVideo(false);
-        showError("Video exceeds 2 minute limit");
-        e.target.value = "";
-      } else {
-        setVideo(file);
-        setCheckingVideo(false);
-        showInfo("Video selected. Ready for upload!");
-      }
-    };
-
-    videoElement.onerror = () => {
-      window.URL.revokeObjectURL(videoElement.src);
-      setCheckingVideo(false);
-      showError("Invalid video file. Could not load metadata.");
-      e.target.value = "";
-    };
-
-    videoElement.src = URL.createObjectURL(file);
+    setVideo(file);
+    infoToast("Video selected. Ready for upload!");
   };
 
   const handleenter = (e) => {
@@ -324,7 +279,7 @@ const Askquestion = () => {
 
   const removeVideo = () => {
     setVideo(null);
-    showInfo("Video removed");
+    infoToast("Video removed");
   };
 
   const getProgressColor = () => {
@@ -333,9 +288,24 @@ const Askquestion = () => {
     return "#4caf50";
   };
 
+  const formatTimeForDisplay = (timeStr) => {
+    if (!timeStr || timeStr === "--:--:--") return "--:--:--";
+    
+    try {
+      const [hours, minutes] = timeStr.split(':');
+      const hourNum = parseInt(hours, 10);
+      const period = hourNum >= 12 ? 'PM' : 'AM';
+      const displayHours = hourNum % 12 || 12;
+      
+      return `${displayHours}:${minutes} ${period}`;
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return timeStr;
+    }
+  };
+
   return (
     <div className="ask-question">
-      <ToastContainer />
       {showVerificationModal && (
         <OtpHandler
           email={user?.result?.email}
@@ -406,7 +376,7 @@ const Askquestion = () => {
                   <p>Max size: <strong>50MB</strong>.
                     <br />Max duration: <strong>2 minutes</strong>.
                     <br />
-                    Allowed between 2PM-7PM only.</p>
+                    Allowed between <strong>2PM-7PM</strong> only.</p>
 
                   <div className="verification-status">
                     <span>Verification: </span>
@@ -425,7 +395,7 @@ const Askquestion = () => {
 
                   {!isVideoVerified ? (
                     <div className="verification-prompt">
-                      <p>You need to verify your email to upload videos</p>
+                      <p>You need to verify your email to upload video</p>
                       <button
                         type="button"
                         className="verify-btn"
@@ -439,22 +409,14 @@ const Askquestion = () => {
                     !video ? (
                       <div className="video-upload-area">
                         <label className="video-upload-label">
-                          {checkingVideo ? (
-                            <div className="video-checking">
-                              <span className="spinner"></span> Checking video...
-                            </div>
-                          ) : (
-                            <>
-                              <MdCloudUpload className="upload-icon" />
-                              <span>Click to select video</span>
-                            </>
-                          )}
+                          <MdCloudUpload className="upload-icon" />
+                          <span>Click to select video</span>
                           <input
                             type="file"
-                            accept=".mp4,.webm,.ogg,video/mp4,video/webm,video/ogg"
+                            accept="video/*"
                             onChange={handleVideoChange}
                             className="video-upload-input"
-                            disabled={isUploading || checkingVideo}
+                            disabled={isUploading}
                           />
                         </label>
                       </div>
@@ -486,11 +448,17 @@ const Askquestion = () => {
                 </>
               ) : (
                 <div className="video-disabled-notice">
-                  <p>⏱️ Video uploads are only available between 2 PM and 7 PM</p>
-                  <p className="small-note">
-                    You can still post text questions anytime. Videos help explain complex issues,
-                    but we limit uploads to maintain server performance during peak hours.
-                  </p>
+                  {isCheckingTime ? (
+                    <p>⏳ Checking video upload availability...</p>
+                  ) : (
+                    <>
+                      <p>⏱️ Video uploads are only available between 2 PM and 7 PM</p>
+                      <p className="small-note">
+                        You can still post text questions anytime. Videos help explain complex issues,
+                        but we limit uploads to maintain server performance during peak hours.
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -524,7 +492,7 @@ const Askquestion = () => {
             <button
               type="submit"
               className='submit-btn'
-              disabled={isUploading || checkingVideo}
+              disabled={isUploading}
             >
               {isUploading ? (
                 <span className="uploading-text">

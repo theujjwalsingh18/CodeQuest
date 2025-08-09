@@ -5,8 +5,8 @@ import Widgettag from './Widgettag'
 const Rightsidebar = () => {
   return (
     <aside className="right-sidebar">
-      <Widget/>
-      <Widgettag/>
+      <Widget />
+      <Widgettag />
     </aside>
   )
 }

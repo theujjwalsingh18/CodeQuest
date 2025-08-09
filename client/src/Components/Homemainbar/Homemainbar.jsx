@@ -4,11 +4,10 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import Questionlist from './Questionlist'
 function Homemainbar() {
-  const user = useSelector((state)=>state.currentuserreducer)
+  const user = useSelector((state) => state.currentuserreducer)
   const location = useLocation();
   const navigate = useNavigate();
-  const questionlist = useSelector((state)=>state.questionreducer)
-  // console.log(questionlist)
+  const questionlist = useSelector((state) => state.questionreducer)
   const checkauth = () => {
     if (user === null) {
       alert("Login or signup to ask a question")
