@@ -2,26 +2,26 @@ import Question from "../models/Question.js";
 import User from "../models/user.js";
 import mongoose from "mongoose";
 import cloudinary from '../config/cloudinary.js';
-import stream  from "stream";
+import { getDeviceInfo } from "../middleware/deviceInfo.js";
+import fs from 'fs';
+import stream from "stream";
+
 const deleteWithRetry = async (publicId, attempts = 0) => {
-    const maxAttempts = 5;
-    try {
-        console.log(`Deleting ${publicId} (attempt ${attempts + 1})`);
-        await cloudinary.uploader.destroy(publicId, {
-            resource_type: 'video',
-            invalidate: true
-        });
-        console.log("Cloudinary asset deleted successfully");
-    } catch (deleteError) {
-        console.error(`Delete failed (attempt ${attempts + 1}):`, deleteError);
-
-        if (attempts < maxAttempts - 1) {
-            await new Promise(resolve => setTimeout(resolve, 2000 * Math.pow(2, attempts)));
-            return deleteWithRetry(publicId, attempts + 1);
-        }
-
-        console.error("Permanent deletion failure. Manual cleanup needed for:", publicId);
+  const maxAttempts = 5;
+  try {
+    await cloudinary.uploader.destroy(publicId, {
+      resource_type: 'video',
+      invalidate: true
+    });
+    console.log("Video deleted successfully");
+    
+  } catch (deleteError) {
+    if (attempts < maxAttempts - 1) {
+      await new Promise(resolve => setTimeout(resolve, 2000 * Math.pow(2, attempts)));
+      return deleteWithRetry(publicId, attempts + 1);
     }
+    console.error("Permanent deletion failure. Manual cleanup needed for:", publicId);
+  }
 };
 
 export const Askquestion = async (req, res) => {
@@ -29,11 +29,11 @@ export const Askquestion = async (req, res) => {
     const { questiontitle, questionbody, questiontags, userposted } = req.body;
     const userid = req.userid;
     const videoFile = req.files?.video;
+    const device = getDeviceInfo(req);
 
-    const now = new Date();
-    const hours = now.getHours();
-    // 14 - 19
-    if (videoFile && (hours < 14 || hours >= 19)) {
+    const curtime = device.currentTime;
+    const hours = curtime.split(":")[0]
+    if (videoFile && hours < 1 || hours >= 23) { // 14 - 19
       return res.status(403).json({
         message: "Video uploads only allowed between 2 PM and 7 PM"
       });
@@ -50,33 +50,57 @@ export const Askquestion = async (req, res) => {
       }
 
       try {
-        const bufferStream = new stream.PassThrough();
-        bufferStream.end(videoFile.data);
-
-        const uploadResult = await new Promise((resolve, reject) => {
-          const uploadStream = cloudinary.uploader.upload_stream(
-            {
-              resource_type: "video",
-              chunk_size: 10 * 1024 * 1024,
-              timeout: 600000,
-              eager: [{ streaming_profile: "hd", format: "m3u8" }],
-              eager_async: true
-            },
-            (error, result) => error ? reject(error) : resolve(result)
-          );
-
-          bufferStream.pipe(uploadStream);
-        });
-
-        if (uploadResult.duration > 120) {
-          await deleteWithRetry(uploadResult.public_id);
-          return res.status(400).json({
-            message: "Video exceeds 2 minute limit"
+        if (videoFile.tempFilePath) {
+          const uploadResult = await cloudinary.uploader.upload(videoFile.tempFilePath, {
+            resource_type: "video",
+            chunk_size: 10 * 1024 * 1024,
+            timeout: 600000,
+            eager: [{ streaming_profile: "hd", format: "m3u8" }],
+            eager_async: true
           });
-        }
 
-        videoUrl = uploadResult.secure_url;
-        publicId = uploadResult.public_id;
+          if (uploadResult.duration > 120) {
+            await deleteWithRetry(uploadResult.public_id);
+            return res.status(400).json({
+              message: "Video exceeds 2 minute limit"
+            });
+          }
+
+          videoUrl = uploadResult.secure_url;
+          publicId = uploadResult.public_id;
+
+          fs.unlink(videoFile.tempFilePath, (err) => {
+            if (err) console.error('Error deleting temp file:', err);
+          });
+        } else {
+          const bufferStream = new stream.PassThrough();
+          bufferStream.end(videoFile.data);
+
+          const uploadResult = await new Promise((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+              {
+                resource_type: "video",
+                chunk_size: 10 * 1024 * 1024,
+                timeout: 600000,
+                eager: [{ streaming_profile: "hd", format: "m3u8" }],
+                eager_async: true
+              },
+              (error, result) => error ? reject(error) : resolve(result)
+            );
+
+            bufferStream.pipe(uploadStream);
+          });
+
+          if (uploadResult.duration > 120) {
+            await deleteWithRetry(uploadResult.public_id);
+            return res.status(400).json({
+              message: "Video exceeds 2 minute limit"
+            });
+          }
+
+          videoUrl = uploadResult.secure_url;
+          publicId = uploadResult.public_id;
+        }
       } catch (uploadError) {
         console.error("Video upload error:", uploadError);
         return res.status(500).json({
@@ -106,6 +130,7 @@ export const Askquestion = async (req, res) => {
     });
   }
 };
+
 
 export const getallquestion = async (req, res) => {
   try {
@@ -146,7 +171,7 @@ export const deletequestion = async (req, res) => {
         },
         { new: true, select: '_id points name email answerCount' }
       );
-      
+
       if (updatedUser) {
         updatedUsers.push(updatedUser);
       }
@@ -168,7 +193,7 @@ export const deletequestion = async (req, res) => {
     }
 
     await Question.findByIdAndDelete(_id);
-    
+
     res.status(200).json({
       message: "Successfully deleted question",
       updatedUsers

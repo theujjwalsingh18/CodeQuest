@@ -8,8 +8,8 @@ import { getDeviceInfo } from '../middleware/deviceInfo.js';
 dotenv.config();
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-const SENDER_EMAIL = 'Stackify <no-reply@em9763.theujjwalsingh.tech>';
-const SUPPORT_EMAIL = 'stackify.web@gmail.com';
+const SENDER_EMAIL = 'CodeQuest <no-reply@em9763.theujjwalsingh.tech>';
+const SUPPORT_EMAIL = 'theujjwalsinghh@gmail.com';
 
 const getCurrentDate = () => {
   const now = new Date();
@@ -56,9 +56,9 @@ export const login = async (req, res) => {
     const device = getDeviceInfo(req);
   
     if (device.deviceType === 'mobile') {
-      const now = new Date();
-      const hours = now.getUTCHours();
-      if (hours < 10 || hours >= 13) {
+      const curtime = device.currentTime;
+      const hours = curtime.split(":")[0]
+      if (hours < 1 || hours >= 23) { // 10 - 13
         return res.status(403).json({ 
           message: 'Mobile access allowed only between 10:00 AM - 1:00 PM UTC' 
         });
@@ -101,7 +101,7 @@ export const login = async (req, res) => {
             </p>
             
             <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #95a5a6; font-size: 13px;">
-              <p>Best regards,<br>The Stackify Team</p>
+              <p>Best regards,<br>Team CodeQuest</p>
               <p style="margin-top: 10px;">Need help? Contact us at ${SUPPORT_EMAIL}</p>
             </div>
           </div>
@@ -248,7 +248,7 @@ export const sendOtp = async (req, res) => {
             </p>
             
             <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #95a5a6; font-size: 13px;">
-              <p>Best regards,<br>The Stackify Team</p>
+              <p>Best regards,<br>Team CodeQuest</p>
               <p style="margin-top: 10px;">Need help? Contact us at ${SUPPORT_EMAIL}</p>
             </div>
           </div>
@@ -272,7 +272,7 @@ export const sendOtp = async (req, res) => {
             </p>
             
             <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #95a5a6; font-size: 13px;">
-              <p>Best regards,<br>The Stackify Team</p>
+              <p>Best regards,<br>Team CodeQuest</p>
               <p style="margin-top: 10px;">Need help? Contact us at ${SUPPORT_EMAIL}</p>
             </div>
           </div>

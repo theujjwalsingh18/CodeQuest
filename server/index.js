@@ -22,10 +22,6 @@ app.use(cors({
   ],
   credentials: true
 }));
-// app.use(fileUpload({
-//   useTempFiles: false,
-//   limits: { fileSize: 50 * 1024 * 1024 }
-// }));
 app.use(fileUpload({
   useTempFiles: true,
   tempFileDir: '/tmp/',
@@ -37,7 +33,7 @@ app.use(fileUpload({
 
 app.use("/user", mobileTimeRestriction, userroutes);
 app.use("/auth", mobileTimeRestriction, authRoutes)
-app.use('/questions', questionroutes)
+app.use('/questions', mobileTimeRestriction, questionroutes)
 app.use('/answer', mobileTimeRestriction, answerroutes);
 app.get('/get-time', getDeviceTime)
 app.get('/', (req, res) => {
@@ -51,7 +47,6 @@ mongoose.connect(database_url)
   .then(() => app.listen(PORT, () => { console.log(`server running on port ${PORT}`) }))
   .catch((err) => console.log(err.message))
 
-
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
 });
@@ -59,6 +54,3 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
-
-const server = app.listen(PORT, () => console.log(`Running on ${PORT}`));
-server.setTimeout(120000);
