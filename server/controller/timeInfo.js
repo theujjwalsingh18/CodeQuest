@@ -11,7 +11,7 @@ export const getDeviceTime = async (req, res) => {
           const hour = date.toLocaleString('en-US', { timeZone: device.timezone, hour: '2-digit', hour12: false });
           const currentHour = parseInt(hour, 10);
           
-          if (currentHour < 10 || currentHour >= 13) {
+          if (currentHour < 10 || currentHour >= 23) { // 10 -23
               isRestricted = true;
           }
       } catch (error) {
