@@ -14,8 +14,8 @@ const TimeRestriction = ({ children }) => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const initialBackendSecondsRef = useRef(0);
-  const initialClientTimeRef = useRef(0);
+  const initialBackendSecondsRef = useRef(null);
+  const initialClientTimeRef = useRef(null);
 
   const formatToAMPM = (timeStr) => {
     if (timeStr === '--:--:--') return '--:--:--';
@@ -39,21 +39,20 @@ const TimeRestriction = ({ children }) => {
         navigate('/', { replace: true });
       }
 
-      if (data.isRestricted) {
+      if (data.currentTime) {
         const [hours, minutes, seconds] = data.currentTime.split(':').map(Number);
         initialBackendSecondsRef.current = hours * 3600 + minutes * 60 + seconds;
         initialClientTimeRef.current = Date.now();
-        
         const times = calculateTimes();
+
         setDisplayCurrentTime(times.currentTime);
         setCountdown(times.countdown);
+        setShowRestriction(times.isRestricted);
+      } else {
+        setShowRestriction(data.isRestricted);
       }
-
-      setShowRestriction(data.isRestricted);
-      return data;
     } catch (error) {
       console.error('Failed to fetch time info:', error);
-      return null;
     }
   };
 
@@ -62,7 +61,8 @@ const TimeRestriction = ({ children }) => {
       return { 
         currentTime: '--:--:--', 
         countdown: '--:--:--',
-        message: 'Calculating...'
+        message: 'Calculating...',
+        isRestricted: true
       };
     }
 
@@ -77,7 +77,9 @@ const TimeRestriction = ({ children }) => {
     const currentTimeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
     const startSeconds = 10 * 3600;  // 10:00 AM
-    const endSeconds = 13 * 3600;    // 1:00 PM
+    const endSeconds = 13 * 3600;    // 1:00 PM  // 13 * 3600
+    const isRestricted = (currentSeconds < startSeconds) || (currentSeconds >= endSeconds);
+    
     let targetSeconds;
     let message = 'Access will be available in:';
     
@@ -102,43 +104,39 @@ const TimeRestriction = ({ children }) => {
     return { 
       currentTime: currentTimeStr, 
       countdown: countdownStr,
-      message
+      message,
+      isRestricted
     };
   };
 
   useEffect(() => {
-    const checkAccess = async () => {
-      await fetchTimeInfo();
-    };
-
-    checkAccess();
-    const interval = setInterval(checkAccess, 30000);
-
+    fetchTimeInfo();
+    const interval = setInterval(fetchTimeInfo, 30000);
     return () => clearInterval(interval);
   }, [navigate, location]);
 
   useEffect(() => {
-    if (showRestriction) {
-      const updateInterval = setInterval(() => {
-        const { currentTime, countdown } = calculateTimes();
-        setDisplayCurrentTime(currentTime);
-        setCountdown(countdown);
-      }, 1000);
+    const interval = setInterval(() => {
+      if (initialBackendSecondsRef.current === null || initialClientTimeRef.current === null) {
+        return;
+      }
+      
+      const times = calculateTimes();
+      setDisplayCurrentTime(times.currentTime);
+      setCountdown(times.countdown);
+      setShowRestriction(times.isRestricted);
+    }, 1000);
 
-      return () => clearInterval(updateInterval);
-    } else {
-      setCountdown('--:--:--');
-      setDisplayCurrentTime('--:--:--');
-    }
-  }, [showRestriction]);
+    return () => clearInterval(interval);
+  }, []);
 
   if (showRestriction) {
     const displayTimezone = timeInfo.timezone
       ? timeInfo.timezone.split('/').pop().replace(/_/g, ' ')
       : 'Unknown';
 
-    const { message } = calculateTimes();
     const displayTimeAMPM = formatToAMPM(displayCurrentTime);
+    const { message } = calculateTimes();
 
     return (
       <div className="time-restriction-container">

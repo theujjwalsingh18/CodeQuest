@@ -19,17 +19,17 @@ function App() {
   }, [dispatch])
 
   useEffect(() => {
-    if (window.innerWidth <= 768) {
+    if (window.innerWidth < 768) {
       setslidein(false);
     }
   }, [location.pathname]);
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth <= 768) {
-        setslidein(false);
-      } else {
+      if (window.innerWidth >= 768) {
         setslidein(true);
+      } else {
+        setslidein(false);
       }
     };
     
@@ -40,7 +40,7 @@ function App() {
   }, []);
 
   const handleslidein = (shouldClose = false) => {
-    if (window.innerWidth <= 768) {
+    if (window.innerWidth < 768) {
       if (shouldClose) {
         setslidein(false);
       } else {
