@@ -39,8 +39,8 @@ const mobileTimeRestriction = (req, res, next) => {
     const { hours, minutes } = getLocalTime(device.timezone);
     const currentMinutes = hours * 60 + minutes;
     
-    const startMinutes = 10 * 60;  // 10:00 AM (600 minutes)  
-    const endMinutes = 23 * 60;    // 1:00 PM (780 minutes)  // 13 * 60 
+    const startMinutes = 10 * 60;  // 10:00 AM (600 minutes) 
+    const endMinutes = 13 * 60;    // 1:00 PM (780 minutes)
     
     if (currentMinutes < startMinutes || currentMinutes >= endMinutes) {
       return res.status(403).json({
