@@ -9,12 +9,6 @@ import { MdCloudUpload } from 'react-icons/md';
 import OtpHandler from '../../Components/OtpHandler/OtpHandler';
 import { getTimeInfo } from '../../api';
 
-const calculateUploadTime = (fileSize) => {
-  const uploadSpeed = 0.625;
-  const sizeInMB = fileSize / (1024 * 1024);
-  return Math.max(5, Math.min(30, Math.round(sizeInMB / uploadSpeed)));
-};
-
 const Askquestion = () => {
   const { successToast, errorToast, infoToast } = useToast();
   const navigate = useNavigate();
@@ -27,30 +21,21 @@ const Askquestion = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-  const [estimatedTime, setEstimatedTime] = useState(null);
   const [isVideoAllowed, setIsVideoAllowed] = useState(false);
   const [isVideoVerified, setIsVideoVerified] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [emailVerificationRequired, setEmailVerificationRequired] = useState(false);
   const [currentTime, setCurrentTime] = useState("--:--:--");
   const [isCheckingTime, setIsCheckingTime] = useState(true);
-
-  const progressRef = useRef({
-    interval: null,
-    timer: null,
-    startTime: null,
-    uploadDuration: 0,
-    processingDuration: 0,
-    savingDuration: 0
-  });
+  const progressRef = useRef(null);
 
   const isWithinVideoHours = (timeStr) => {
     if (!timeStr || timeStr === "--:--:--") return false;
-    
+
     try {
       const [hoursStr] = timeStr.split(':');
       const hours = parseInt(hoursStr, 10);
-      return hours >= 14 && hours < 19;
+      return hours >= 1 && hours < 23; // 2PM - 7PM
     } catch (error) {
       console.error('Error parsing time:', error);
       return false;
@@ -74,7 +59,7 @@ const Askquestion = () => {
   useEffect(() => {
     fetchTimeInfo();
     const interval = setInterval(fetchTimeInfo, 2 * 60 * 1000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -105,6 +90,21 @@ const Askquestion = () => {
     setShowVerificationModal(false);
   };
 
+  const simulateProgress = () => {
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.floor(Math.random() * 5) + 1;
+      if (progress >= 100) {
+        clearInterval(interval);
+        setUploadProgress(100);
+        setUploadStatus("Finalizing...");
+        return;
+      }
+      setUploadProgress(progress);
+    }, 200);
+    progressRef.current = interval;
+  };
+
   const handlesubmit = async (e) => {
     e.preventDefault();
 
@@ -130,34 +130,33 @@ const Askquestion = () => {
     }
 
     setIsUploading(true);
-    setUploadStatus("Preparing upload...");
-    setUploadProgress(0);
-    setEstimatedTime(null);
 
-    progressRef.current.startTime = Date.now();
-    progressRef.current.uploadDuration = video ? calculateUploadTime(video.size) : 0;
-    progressRef.current.processingDuration = video ? 3 : 0;
-    progressRef.current.savingDuration = 2;
-    const totalDuration =
-      progressRef.current.uploadDuration +
-      progressRef.current.processingDuration +
-      progressRef.current.savingDuration;
+    if (video) {
+      setUploadStatus("Preparing upload...");
+      setUploadProgress(0);
 
-    setEstimatedTime(totalDuration);
+      if (progressRef.current) {
+        clearInterval(progressRef.current);
+      }
+      simulateProgress();
+    }
 
     try {
-      const progressHandler = (progressEvent) => {
+      const progressHandler = video ? (progressEvent) => {
         if (progressEvent.lengthComputable) {
           const percentCompleted = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total
           );
-          if (percentCompleted > uploadProgress) {
-            setUploadProgress(percentCompleted);
-          }
+          setUploadProgress(percentCompleted);
+          setUploadStatus("Uploading video...");
         }
-      };
+      } : undefined;
 
-      simulateProgress();
+      if (video) {
+        setTimeout(() => {
+          setUploadStatus("Uploading question...");
+        }, 1000);
+      }
 
       await dispatch(askquestion({
         questiontitle,
@@ -167,8 +166,11 @@ const Askquestion = () => {
         video
       }, navigate, progressHandler));
 
-      setUploadStatus("Finalizing...");
-      setUploadProgress(100);
+      if (video) {
+        setUploadStatus("Saving question...");
+        setUploadProgress(100);
+      }
+
       setTimeout(() => {
         successToast("Question posted successfully!");
         resetForm();
@@ -180,44 +182,6 @@ const Askquestion = () => {
     }
   };
 
-  const simulateProgress = () => {
-    if (progressRef.current.interval) {
-      clearInterval(progressRef.current.interval);
-    }
-
-    const startTime = Date.now();
-    const totalDuration =
-      progressRef.current.uploadDuration +
-      progressRef.current.processingDuration +
-      progressRef.current.savingDuration;
-
-    progressRef.current.interval = setInterval(() => {
-      const elapsed = (Date.now() - startTime) / 1000;
-      const remaining = Math.max(0, totalDuration - elapsed);
-      setEstimatedTime(Math.round(remaining));
-
-      let progress = 0;
-      let status = "Preparing...";
-
-      if (elapsed < progressRef.current.uploadDuration) {
-        progress = (elapsed / progressRef.current.uploadDuration) * 70;
-        status = "Uploading video...";
-      } else if (elapsed < progressRef.current.uploadDuration + progressRef.current.processingDuration) {
-        const processingElapsed = elapsed - progressRef.current.uploadDuration;
-        progress = 70 + (processingElapsed / progressRef.current.processingDuration) * 20;
-        status = "Processing video...";
-      } else {
-        const savingElapsed = elapsed - progressRef.current.uploadDuration - progressRef.current.processingDuration;
-        progress = 90 + (savingElapsed / progressRef.current.savingDuration) * 10;
-        status = "Saving question...";
-        if (progress > 99) progress = 99;
-      }
-
-      setUploadProgress(Math.min(99, Math.floor(progress)));
-      setUploadStatus(status);
-    }, 500);
-  };
-
   const resetForm = () => {
     setquestiontitle("");
     setquestionbody("");
@@ -226,26 +190,20 @@ const Askquestion = () => {
     setIsUploading(false);
     setUploadProgress(0);
     setUploadStatus("");
-    setEstimatedTime(null);
     setIsVideoVerified(false);
-    clearInterval(progressRef.current.interval);
+    if (progressRef.current) {
+      clearInterval(progressRef.current);
+    }
   };
 
   const resetProgress = () => {
     setIsUploading(false);
     setUploadProgress(0);
     setUploadStatus("");
-    setEstimatedTime(null);
-    clearInterval(progressRef.current.interval);
+    if (progressRef.current) {
+      clearInterval(progressRef.current);
+    }
   };
-
-  useEffect(() => {
-    return () => {
-      if (progressRef.current.interval) {
-        clearInterval(progressRef.current.interval);
-      }
-    };
-  }, []);
 
   const handleVideoChange = (e) => {
     const file = e.target.files[0];
@@ -283,25 +241,8 @@ const Askquestion = () => {
   };
 
   const getProgressColor = () => {
-    if (uploadProgress < 40) return "#ff9800";
-    if (uploadProgress < 80) return "#2196f3";
-    return "#4caf50";
-  };
-
-  const formatTimeForDisplay = (timeStr) => {
-    if (!timeStr || timeStr === "--:--:--") return "--:--:--";
-    
-    try {
-      const [hours, minutes] = timeStr.split(':');
-      const hourNum = parseInt(hours, 10);
-      const period = hourNum >= 12 ? 'PM' : 'AM';
-      const displayHours = hourNum % 12 || 12;
-      
-      return `${displayHours}:${minutes} ${period}`;
-    } catch (error) {
-      console.error('Error formatting time:', error);
-      return timeStr;
-    }
+    const hue = Math.round((uploadProgress * 120) / 100);
+    return `hsl(${hue}, 100%, 45%)`;
   };
 
   return (
@@ -436,11 +377,6 @@ const Askquestion = () => {
                         <div className="video-details">
                           <div className="video-name">{video.name}</div>
                           <div className="video-size">Size: {(video.size / (1024 * 1024)).toFixed(2)}MB</div>
-                          {isUploading && (
-                            <div className="upload-time-estimate">
-                              Estimated upload time: {calculateUploadTime(video.size)} seconds
-                            </div>
-                          )}
                         </div>
                       </div>
                     )
@@ -459,30 +395,6 @@ const Askquestion = () => {
                       </p>
                     </>
                   )}
-                </div>
-              )}
-
-              {isUploading && (
-                <div className="upload-progress-container">
-                  <div className="upload-status">
-                    {uploadStatus}
-                    {estimatedTime !== null && (
-                      <span className="estimated-time">
-                        (approx. {estimatedTime}s remaining)
-                      </span>
-                    )}
-                  </div>
-                  <div className="progress-bar">
-                    <div
-                      className="progress-fill"
-                      style={{
-                        width: `${uploadProgress}%`,
-                        backgroundColor: getProgressColor()
-                      }}
-                    >
-                      {uploadProgress}%
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
@@ -505,6 +417,23 @@ const Askquestion = () => {
           </div>
         </form>
       </div>
+      {isUploading && video && (
+        <div className="progress-bar-container">
+          <div className="progress-bar-header">
+            <span>{uploadStatus}</span>
+            <span>{uploadProgress}%</span>
+          </div>
+          <div className="progress-bar-track">
+            <div
+              className="progress-bar-fill"
+              style={{
+                width: `${uploadProgress}%`,
+                background: getProgressColor()
+              }}
+            ></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
