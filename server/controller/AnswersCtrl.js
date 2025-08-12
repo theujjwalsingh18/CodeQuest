@@ -116,11 +116,12 @@ export const voteanswer = async (req, res) => {
         const userIdStr = String(userid);
         const answerAuthorId = answer.userid;
 
+        const oldUpvoteCount = answer.upvote.length;
+        const oldDownvoteCount = answer.downvote.length;
+        const oldNetScore = oldUpvoteCount - oldDownvoteCount;
+
         const hasUpvoted = answer.upvote.includes(userIdStr);
         const hasDownvoted = answer.downvote.includes(userIdStr);
-        const oldUpvoteCount = answer.upvote.length;
-
-        let pointChangeForAuthor = 0;
 
         if (value === "upvote") {
             if (hasUpvoted) {
@@ -142,12 +143,14 @@ export const voteanswer = async (req, res) => {
             }
         }
 
-        const newUpvoteCount = answer.upvote.length;
         await question.save();
+        const newUpvoteCount = answer.upvote.length;
+        const newDownvoteCount = answer.downvote.length;
+        const newNetScore = newUpvoteCount - newDownvoteCount;
 
-        const oldMilestones = Math.floor(oldUpvoteCount / 5);
-        const newMilestones = Math.floor(newUpvoteCount / 5);
-        pointChangeForAuthor = 5 * (newMilestones - oldMilestones);
+        const oldMilestones = Math.floor(oldNetScore / 5);
+        const newMilestones = Math.floor(newNetScore / 5);
+        const pointChangeForAuthor = 5 * (newMilestones - oldMilestones);
 
         let updatedUser = null;
         if (pointChangeForAuthor !== 0) {
