@@ -33,7 +33,7 @@ export const Askquestion = async (req, res) => {
 
     const curtime = device.currentTime;
     const hours = curtime.split(":")[0]
-    if (videoFile && hours < 1 || hours >= 23) { // 14 - 19
+    if (videoFile && hours < 14 || hours >= 19) { // 2pm - 7pm
       return res.status(403).json({
         message: "Video uploads only allowed between 2 PM and 7 PM"
       });

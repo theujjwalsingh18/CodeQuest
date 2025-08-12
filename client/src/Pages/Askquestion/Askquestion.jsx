@@ -35,7 +35,7 @@ const Askquestion = () => {
     try {
       const [hoursStr] = timeStr.split(':');
       const hours = parseInt(hoursStr, 10);
-      return hours >= 1 && hours < 23; // 2PM - 7PM
+      return hours >= 14 && hours < 19; // 2PM - 7PM
     } catch (error) {
       console.error('Error parsing time:', error);
       return false;

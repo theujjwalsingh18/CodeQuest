@@ -58,7 +58,9 @@ export const login = async (req, res) => {
     if (device.deviceType === 'mobile') {
       const curtime = device.currentTime;
       const hours = curtime.split(":")[0]
-      if (hours < 1 || hours >= 23) { // 10 - 13
+      console.log(hours);
+      
+      if (hours < 10 || hours >= 13) { // 10 - 13
         return res.status(403).json({ 
           message: 'Mobile access allowed only between 10:00 AM - 1:00 PM UTC' 
         });
