@@ -7,23 +7,24 @@
   border: 1px solid #e3e6e8;
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+.stats-row {
+  display: flex;
+  justify-content: space-between;
   margin-bottom: 25px;
+  gap: 10px;
 }
 
 .stat-card {
   border-radius: 12px;
-  padding: 20px 10px;
+  padding: 15px 5px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   transition: all 0.3s ease;
   position: relative;
-  overflow: hidden;
+  flex: 1;
+  min-width: 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
@@ -33,37 +34,40 @@
 }
 
 .stat-icon {
-  width: 80px;
-  height: 80px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   background-color: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 15px;
+  margin-bottom: 8px;
 }
 
 .stat-gif {
-  width: 60px;
-  height: 60px;
+  width: 35px;
+  height: 35px;
   object-fit: contain;
 }
 
 .stat-value {
-  font-size: 25px;
+  font-size: 20px;
   font-weight: 700;
   color: #2c3e50;
   line-height: 1;
+  margin-bottom: 3px;
 }
 
 .stat-label {
-  font-size: 18px;
+  font-size: 14px;
   color: #6c757d;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-top: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
-
 
 .share-points-btn {
   width: 100%;
@@ -298,27 +302,41 @@
   margin-right: 8px;
 }
 
+.points-warning {
+  margin-top: 15px;
+  padding: 12px;
+  background-color: #fff3cd;
+  color: #856404;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 14px;
+}
+
 @media (max-width: 768px) {
   .user-stats {
     padding: 20px;
   }
   
+  .stat-card {
+    padding: 12px 5px;
+  }
+  
   .stat-icon {
-    width: 70px;
-    height: 70px;
+    width: 45px;
+    height: 45px;
   }
   
   .stat-gif {
-    width: 50px;
-    height: 50px;
+    width: 30px;
+    height: 30px;
   }
   
   .stat-value {
-    font-size: 22px;
+    font-size: 18px;
   }
   
   .stat-label {
-    font-size: 16px;
+    font-size: 13px;
   }
   
   .share-points-btn {
@@ -329,37 +347,62 @@
   .transfer-section {
     padding: 15px;
   }
-  
-  .slider-wrapper {
-    height: 28px;
-  }
-  
-  .amount-bubble {
-    font-size: 16px;
-    padding: 8px 16px;
-  }
-  
-  .transfer-btn {
-    padding: 12px;
-    font-size: 15px;
-  }
 }
 
-@media (max-width: 576px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-    gap: 15px;
+@media (max-width: 480px) {
+  .stats-row {
+    gap: 5px;
   }
   
   .stat-card {
-    padding: 15px;
+    padding: 10px 3px;
+  }
+  
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .stat-gif {
+    width: 25px;
+    height: 25px;
+  }
+  
+  .stat-value {
+    font-size: 16px;
+  }
+  
+  .stat-label {
+    font-size: 12px;
+    letter-spacing: 0.3px;
   }
   
   .share-points-btn {
     font-size: 14px;
+    padding: 10px;
   }
   
   .transfer-header h3 {
     font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .stat-icon {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .stat-gif {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .stat-value {
+    font-size: 15px;
+  }
+  
+  .stat-label {
+    font-size: 11px;
   }
 }

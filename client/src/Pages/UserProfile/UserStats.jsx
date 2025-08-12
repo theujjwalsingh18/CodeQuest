@@ -83,24 +83,20 @@ const UserStats = ({ user: profileUser }) => {
 
   return (
     <div className="user-stats">
-      <div className="stats-grid">
+      <div className="stats-row">
         <div className="stat-card question-card">
           <div className="stat-icon">
-            <img src={question} alt="Questions" className="stat-gif"
-            />
+            <img src={question} alt="Questions" className="stat-gif" />
           </div>
-          <div className="stat-value">{profileUser.questionCount
-            || 0}</div>
+          <div className="stat-value">{profileUser.questionCount || 0}</div>
           <div className="stat-label">Questions</div>
         </div>
 
         <div className="stat-card answer-card">
           <div className="stat-icon">
-            <img src={answer} alt="Answers" className="stat-gif"
-            />
+            <img src={answer} alt="Answers" className="stat-gif" />
           </div>
-          <div className="stat-value">{profileUser.answerCount ||
-            0}</div>
+          <div className="stat-value">{profileUser.answerCount || 0}</div>
           <div className="stat-label">Answers</div>
         </div>
 
@@ -108,8 +104,7 @@ const UserStats = ({ user: profileUser }) => {
           <div className="stat-icon">
             <img src={medal} alt="Points" className="stat-gif" />
           </div>
-          <div className="stat-value">{profileUser.points ||
-            0}</div>
+          <div className="stat-value">{profileUser.points || 0}</div>
           <div className="stat-label">Points</div>
         </div>
       </div>
@@ -127,8 +122,7 @@ const UserStats = ({ user: profileUser }) => {
       {!hasSufficientPoints && !isOwnProfile && (
         <div className="points-warning">
           {currentUserPoints === 0 ? "" :
-            `You need more than 10 points to share with others (you have
-${currentUserPoints})`}
+            `You need more than 10 points to share with others (you have ${currentUserPoints})`}
         </div>
       )}
 
@@ -151,8 +145,7 @@ ${currentUserPoints})`}
           <div className="slider-container">
             <div className="slider-labels">
               <span>1 point</span>
-              <span>{currentUserPoints} points (your
-                balance)</span>
+              <span>{currentUserPoints} points (your balance)</span>
             </div>
 
             <div className="slider-wrapper">
@@ -181,16 +174,14 @@ ${currentUserPoints})`}
           <button
             onClick={handleTransfer}
             disabled={isTransferring || transferAmount > currentUserPoints || transferAmount < 1}
-            className={`transfer-btn ${isTransferring ? 'transferring' :
-              ''}`}
+            className={`transfer-btn ${isTransferring ? 'transferring' : ''}`}
           >
             {isTransferring ? (
               <>
                 <span className="spinner"></span> Sharing...
               </>
             ) : (
-              `Send ${transferAmount} ${transferAmount === 1 ? 'point' :
-                'points'}`
+              `Send ${transferAmount} ${transferAmount === 1 ? 'point' : 'points'}`
             )}
           </button>
 
