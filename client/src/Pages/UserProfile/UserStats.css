@@ -305,7 +305,7 @@
 .points-warning {
   margin-top: 15px;
   padding: 12px;
-  background-color: #fff3cd;
+  /* background-color: #fff3cd; */
   color: #856404;
   border-radius: 8px;
   text-align: center;

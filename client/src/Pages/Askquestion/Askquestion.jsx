@@ -29,6 +29,35 @@ const Askquestion = () => {
   const [isCheckingTime, setIsCheckingTime] = useState(true);
   const progressRef = useRef(null);
 
+  const getVideoDuration = (file) => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+
+      const timeout = setTimeout(() => {
+        video.onerror = null;
+        video.onloadedmetadata = null;
+        URL.revokeObjectURL(video.src);
+        reject(new Error("Timeout loading video metadata"));
+      }, 5000);
+
+      video.onloadedmetadata = function () {
+        clearTimeout(timeout);
+        const duration = video.duration;
+        URL.revokeObjectURL(video.src);
+        resolve(duration);
+      };
+
+      video.onerror = function () {
+        clearTimeout(timeout);
+        URL.revokeObjectURL(video.src);
+        reject(new Error("Could not load video metadata"));
+      };
+
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
   const isWithinVideoHours = (timeStr) => {
     if (!timeStr || timeStr === "--:--:--") return false;
 
@@ -205,7 +234,7 @@ const Askquestion = () => {
     }
   };
 
-  const handleVideoChange = (e) => {
+  const handleVideoChange = async (e) => {
     const file = e.target.files[0];
     if (!file) {
       setVideo(null);
@@ -225,8 +254,22 @@ const Askquestion = () => {
       return;
     }
 
-    setVideo(file);
-    infoToast("Video selected. Ready for upload!");
+    try {
+      const duration = await getVideoDuration(file);
+      if (duration > 120) {
+        errorToast("Video duration exceeds 2 minute limit");
+        e.target.value = "";
+        return;
+      }
+
+      file.duration = duration;
+      setVideo(file);
+      infoToast("Video selected. Ready for upload!");
+    } catch (err) {
+      console.error("Error checking video duration:", err);
+      errorToast("Failed to validate video");
+      e.target.value = "";
+    }
   };
 
   const handleenter = (e) => {
@@ -243,6 +286,12 @@ const Askquestion = () => {
   const getProgressColor = () => {
     const hue = Math.round((uploadProgress * 120) / 100);
     return `hsl(${hue}, 100%, 45%)`;
+  };
+
+  const formatDuration = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
   };
 
   return (
@@ -377,6 +426,7 @@ const Askquestion = () => {
                         <div className="video-details">
                           <div className="video-name">{video.name}</div>
                           <div className="video-size">Size: {(video.size / (1024 * 1024)).toFixed(2)}MB</div>
+                          <div className="video-duration">Duration: {formatDuration(video.duration)}</div>
                         </div>
                       </div>
                     )

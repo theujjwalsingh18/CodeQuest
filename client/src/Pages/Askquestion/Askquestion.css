@@ -98,6 +98,12 @@
   min-width: 180px;
 }
 
+.video-duration {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-top: 4px;
+}
+
 .submit-btn:hover:not(:disabled) {
   background-color: #0086d8;
 }
