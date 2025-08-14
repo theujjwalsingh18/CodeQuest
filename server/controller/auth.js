@@ -33,11 +33,13 @@ export const signup = async (req, res) => {
     if (existinguser) {
       return res.status(409).json({ message: "User already exist" });
     }
+    const device = getDeviceInfo(req);
     const hashedpassword = await bcrypt.hash(password, 12);
     const newuser = await User.create({
       name,
       email,
-      password: hashedpassword
+      password: hashedpassword,
+      loginHistory: [device]
     });
     const token = jwt.sign({
       email: newuser.email, id: newuser._id
@@ -54,7 +56,6 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
   try {
     const device = getDeviceInfo(req);
-  
     if (device.deviceType === 'mobile') {
       const curtime = device.currentTime;
       const hours = curtime.split(":")[0]
