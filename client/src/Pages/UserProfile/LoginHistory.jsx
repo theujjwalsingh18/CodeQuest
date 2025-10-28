@@ -4,6 +4,7 @@ import {
     faClock,
     faDesktop,
     faMobileAlt,
+    faTabletAlt,
     faMapLocationDot,
     faLock,
     faChevronDown
@@ -80,7 +81,7 @@ const LoginHistorySection = ({ loginHistory, loadingHistory, error, onRetry }) =
                                     <div className="history-header">
                                         <div className="device-icon">
                                             <FontAwesomeIcon
-                                                icon={entry.deviceType === 'mobile' ? faMobileAlt : faDesktop}
+                                                icon={entry.deviceType === 'mobile' ? faMobileAlt : (entry.deviceType === 'tablet' ? faTabletAlt : faDesktop)}
                                                 className={entry.deviceType}
                                             />
                                         </div>
