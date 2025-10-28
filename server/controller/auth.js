@@ -2,14 +2,16 @@ import User from "../models/user.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from 'crypto';
-import sgMail from '@sendgrid/mail';
-import dotenv from 'dotenv';
+import axios from "axios";
+import { Resend } from "resend";
 import { getDeviceInfo } from '../middleware/deviceInfo.js';
+import dotenv from 'dotenv';
 dotenv.config();
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-const SENDER_EMAIL = 'CodeQuest <no-reply@em9763.theujjwalsingh.tech>';
-const SUPPORT_EMAIL = 'theujjwalsinghh@gmail.com';
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const SENDER_EMAIL = 'CodeQuest <no-reply@theujjwalsingh.codes>';
+const SUPPORT_EMAIL = "theujjwalsinghh@gmail.com";
 
 const getCurrentDate = () => {
   const now = new Date();
@@ -17,6 +19,45 @@ const getCurrentDate = () => {
     .toISOString()
     .split('T')[0];
 };
+
+async function sendEmailSMTP2GO(to, subject, html) {
+  try {
+    // Primary: SMTP2GO
+    const response = await axios.post(
+      "https://api.smtp2go.com/v3/email/send",
+      {
+        api_key: process.env.SMTP2GO_API_KEY,
+        to: [to],
+        sender: SENDER_EMAIL,
+        subject,
+        html_body: html,
+      },
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    console.log(`✅ Email sent via SMTP2GO to: ${to}`);
+    return response.data;
+
+  } catch (err) {
+    console.error("❌ SMTP2GO API error:", err.response?.data || err.message);
+    console.log("⚠️ Retrying with Resend...");
+    try {
+      // Fallback: Resend
+      const data = await resend.emails.send({
+        from: SENDER_EMAIL,
+        to,
+        subject,
+        html,
+      });
+
+      console.log(`✅ Email sent via Resend fallback to: ${to}`);
+      return data;
+    } catch (fallbackErr) {
+      console.error("❌ Resend API error:", fallbackErr.message);
+      throw new Error("Both SMTP2GO and Resend failed to send email");
+    }
+  }
+}
 
 export const signup = async (req, res) => {
   const { name, email, password } = req.body;
@@ -60,10 +101,10 @@ export const login = async (req, res) => {
       const curtime = device.currentTime;
       const hours = curtime.split(":")[0]
       console.log(hours);
-      
+
       if (hours < 10 || hours >= 13) { // 10 - 13
-        return res.status(403).json({ 
-          message: 'Mobile access allowed only between 10:00 AM - 1:00 PM UTC' 
+        return res.status(403).json({
+          message: 'Mobile access allowed only between 10:00 AM - 1:00 PM UTC'
         });
       }
     }
@@ -72,15 +113,15 @@ export const login = async (req, res) => {
     if (!existinguser) {
       return res.status(404).json({ message: "User doesn't exist" });
     }
-   
-    const ispasswordcrct = await bcrypt.compare(password, existinguser.password); 
+
+    const ispasswordcrct = await bcrypt.compare(password, existinguser.password);
     if (!ispasswordcrct) {
       return res.status(400).json({ message: "Invalid password" });
     }
     if (device.browser === 'Chrome' || device.browser === 'Mobile Chrome') {
       const otp = crypto.randomInt(100000, 999999).toString();
       const otpExpiry = new Date(Date.now() + 5 * 60000);
-      
+
       existinguser.loginOtp = otp;
       existinguser.loginOtpExpiry = otpExpiry;
       await existinguser.save();
@@ -111,29 +152,22 @@ export const login = async (req, res) => {
         `
       };
 
-      const msg = {
-        to: email,
-        from: SENDER_EMAIL,
-        subject: emailTemplate.subject,
-        html: emailTemplate.html
-      };
+      await sendEmailSMTP2GO(email, emailTemplate.subject, emailTemplate.html);
 
-      await sgMail.send(msg);
-      
-      return res.status(200).json({ 
+      return res.status(200).json({
         otpRequired: true,
-        message: "OTP sent for Chrome verification" 
+        message: "OTP sent for Chrome verification"
       });
-    }else {
+    } else {
       const token = jwt.sign(
         { email: existinguser.email, id: existinguser._id },
         process.env.JWT_SECRET,
         { expiresIn: "1h" }
       );
-      
+
       existinguser.loginHistory.push(device);
       await existinguser.save();
-      
+
       res.status(200).json({ result: existinguser, token });
     }
   } catch (error) {
@@ -147,16 +181,16 @@ export const verifyLoginOtp = async (req, res) => {
 
   try {
     const device = getDeviceInfo(req);
-    const user = await User.findOne({ 
-      email, 
+    const user = await User.findOne({
+      email,
       loginOtp: otp,
-      loginOtpExpiry: { $gt: Date.now() } 
+      loginOtpExpiry: { $gt: Date.now() }
     });
 
     if (!user) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Invalid OTP or expired. Please request a new OTP." 
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP or expired. Please request a new OTP."
       });
     }
 
@@ -198,7 +232,7 @@ export const sendOtp = async (req, res) => {
       const today = getCurrentDate();
       if (user.lastResetDate === today && user.resetAttempted) {
         console.log(`User already requested password today on ${email}`);
-        
+
         return res.status(429).json({
           success: false,
           message: "Only one password reset attempt allowed per day. Please try again tomorrow."
@@ -209,7 +243,7 @@ export const sendOtp = async (req, res) => {
     const now = new Date();
     const lastOtpField = purpose === 'passwordReset' ? 'lastResetOtpSent' : 'lastVideoOtpSent';
     const lastOtpSent = user[lastOtpField];
-    
+
     if (lastOtpSent && (now - lastOtpSent) < 60000) {
       return res.status(429).json({
         success: false,
@@ -232,74 +266,40 @@ export const sendOtp = async (req, res) => {
 
     await user.save();
 
-    let emailTemplate;
-    if (purpose === 'passwordReset') {
-      emailTemplate = {
-        subject: `Your Password Reset OTP`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #f78409; border-radius: 8px;">
-            <h2 style="color: #f78409; text-align: center;">Password Reset Request</h2>
-            <p>We received a request to reset your password for account: <strong>${email}</strong></p>
-            
-            <div style="background: #f8f9fa; padding: 20px; text-align: center; margin: 25px 0; border-radius: 8px; border: 2px dashed #f78409;">
-              <h1 style="margin: 0; letter-spacing: 3px; color: #2c3e50;">${otp}</h1>
-            </div>
-            
-            <p style="font-size: 14px; color: #7f8c8d;">
-              <strong>This OTP is valid for 5 minutes.</strong><br>
-              If you didn't request this, please ignore this email or contact support.
-            </p>
-            
-            <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #95a5a6; font-size: 13px;">
-              <p>Best regards,<br>Team CodeQuest</p>
-              <p style="margin-top: 10px;">Need help? Contact us at ${SUPPORT_EMAIL}</p>
-            </div>
-          </div>
-        `
-      };
-    } else if (purpose === 'videoVerification') {
-      emailTemplate = {
-        subject: "Video Verification Code",
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #f78409; border-radius: 8px;">
-            <h2 style="color: #f78409; text-align: center;">Video Upload Verification</h2>
-            <p>To upload a video with your question, please verify your email: <strong>${email}</strong></p>
-            
-            <div style="background: #f8f9fa; padding: 20px; text-align: center; margin: 25px 0; border-radius: 8px; border: 2px dashed #f78409;">
-              <h1 style="margin: 0; letter-spacing: 3px; color: #2c3e50;">${otp}</h1>
-            </div>
-            
-            <p style="font-size: 14px; color: #7f8c8d;">
-              <strong>This verification code is valid for 5 minutes.</strong><br>
-              If you didn't request this, please ignore this email or contact support.
-            </p>
-            
-            <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #95a5a6; font-size: 13px;">
-              <p>Best regards,<br>Team CodeQuest</p>
-              <p style="margin-top: 10px;">Need help? Contact us at ${SUPPORT_EMAIL}</p>
-            </div>
-          </div>
-        `
-      };
-    }
+    const subject =
+      purpose === "passwordReset"
+        ? "Your Password Reset OTP"
+        : "Video Verification Code";
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #f78409; border-radius: 8px;">
+        <h2 style="color: #f78409; text-align: center;">${purpose === "passwordReset"
+        ? "Password Reset Request"
+        : "Video Upload Verification"
+      }</h2>
+        <p>We received a request for your account: <strong>${email}</strong></p>
+        <div style="background: #f8f9fa; padding: 20px; text-align: center; margin: 25px 0; border-radius: 8px; border: 2px dashed #f78409;">
+          <h1 style="margin: 0; letter-spacing: 3px; color: #2c3e50;">${otp}</h1>
+        </div>
+        <p style="font-size: 14px; color: #7f8c8d;">
+          <strong>This OTP is valid for 5 minutes.</strong><br>
+          If you didn't request this, please ignore this email or contact support.
+        </p>
+        <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #95a5a6; font-size: 13px;">
+          <p>Best regards,<br>Team CodeQuest</p>
+          <p style="margin-top: 10px;">Need help? Contact us at ${SUPPORT_EMAIL}</p>
+        </div>
+      </div>
+    `;
 
-    const msg = {
-      to: email,
-      from: SENDER_EMAIL,
-      subject: emailTemplate.subject,
-      html: emailTemplate.html
-    };
+    await sendEmailSMTP2GO(email, subject, html);
 
-    await sgMail.send(msg);
-    console.log(`Mail sent successfully to: ${email}`);
-    
     res.status(200).json({
       success: true,
       message: "OTP sent successfully",
-      purpose
+      purpose,
     });
   } catch (error) {
-    console.error("SendGrid error:", error.response?.body || error.message);
+    console.error("SMTP2GO error:", error.message);
     res.status(500).json({ success: false, message: "Failed to send OTP email" });
   }
 };
@@ -343,7 +343,7 @@ export const verifyOtp = async (req, res) => {
       user.videoOtp = undefined;
       user.videoOtpExpiry = undefined;
     }
-    
+
     await user.save();
 
     res.status(200).json({ success: true, message: "OTP verified successfully" });
